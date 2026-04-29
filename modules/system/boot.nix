@@ -15,27 +15,10 @@
 
   environment.systemPackages = [ pkgs.sbctl ];
 
-  # Lanzaboote signs the UKI at /boot/EFI/Linux/ (the actual Secure Boot
-  # entry point), but NixOS' bootspec layer also drops a bare kernel at
-  # /boot/EFI/nixos/kernel-*.efi that lanzaboote does not sign. It is not
-  # on the boot path — the UKI is self-contained — but `sbctl verify` flags
-  # it as unsigned, and a future fallback boot path could try to chainload
-  # it. Sign whatever exists there once the lanzaboote keys are in place.
-  systemd.services.sign-bare-kernel = {
-    description = "Sign bare kernel files left at /boot/EFI/nixos/";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "local-fs.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    script = ''
-      if [ -d /etc/secureboot/keys ]; then
-        for f in /boot/EFI/nixos/kernel-*.efi; do
-          [ -e "$f" ] || continue
-          ${pkgs.sbctl}/bin/sbctl sign "$f"
-        done
-      fi
-    '';
-  };
+  # NOTE: Do not sign /boot/EFI/nixos/kernel-*.efi (or initrd) with sbctl.
+  # Lanzaboote verifies those files at boot via a content **hash** stored
+  # inside the signed UKI stub, not via PE signatures. Appending a sbctl
+  # signature mutates the file bytes, the hash check fails, and the stub
+  # aborts with "Kernel hash does not match". The bare files appear as
+  # "is not signed" in `sbctl verify` and that is the required state.
 }

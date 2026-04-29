@@ -9,7 +9,7 @@ Declarative NixOS configuration for `battlestation` (AMD Ryzen 7 9800X3D, Radeon
 Before booting the installer:
 
 1. Disable Secure Boot (it gets re-enabled at the end after key enrollment).
-2. Put Secure Boot into **Setup Mode** — on ASRock B850: *Security → Secure Boot → Key Management → Reset to Setup Mode* (or *Clear Secure Boot Keys*). Without Setup Mode the auto-enrollment on first boot silently does nothing.
+2. Put Secure Boot into **Setup Mode** — on ASRock B850: *Security → Secure Boot → Secure Boot Mode → Custom* and then *Clear Secure Boot Keys*. Without Setup Mode the auto-enrollment on first boot silently does nothing.
 3. Confirm UEFI mode (no CSM / Legacy boot).
 
 If Windows is already installed on the second NVMe with **BitLocker active**: have the recovery key ready (Microsoft account → Devices → BitLocker recovery keys). Clearing the firmware keys changes PCR 7, so the next Windows boot prompts for recovery once.
@@ -67,18 +67,19 @@ Root stays without a password (`PermitRootLogin = "no"`, sudo via `wheel`).
 
 ### Finish Secure Boot setup
 
-The first boot ran three systemd services:
+The first boot ran two systemd services from the Lanzaboote module:
 
-- `generate-sb-keys.service` (Lanzaboote) — created PK/KEK/db under `/etc/secureboot/keys`.
-- `prepare-sb-auto-enroll.service` (Lanzaboote) — exported signed `.auth` files to `/boot/loader/keys/auto/` (Microsoft keys included by default) and re-signed the ESP artifacts.
-- `sign-bare-kernel.service` (`modules/system/boot.nix`) — signed `/boot/EFI/nixos/kernel-*.efi`. Lanzaboote signs the UKI at `/boot/EFI/Linux/` but leaves the raw kernel that NixOS' bootspec drops at `/boot/EFI/nixos/` unsigned, which `sbctl verify` flags.
+- `generate-sb-keys.service` — created PK/KEK/db under `/etc/secureboot/keys`.
+- `prepare-sb-auto-enroll.service` — exported signed `.auth` files to `/boot/loader/keys/auto/` (Microsoft keys included by default) and re-signed the ESP artifacts.
 
 Verify before turning Secure Boot on:
 
 ```bash
-sudo sbctl verify          # all entries under /boot must report "signed"
-sudo bootctl status             # expect: Secure Boot: disabled (setup)
+sudo sbctl verify          # see note below
+sudo bootctl status        # expect: Secure Boot: disabled (setup)
 ```
+
+`sbctl verify` will report `/boot/EFI/nixos/kernel-*.efi` (and potentially the initrd) as **not signed** — leave them that way. Lanzaboote verifies those files via a content hash inside the signed UKI stub, not via a PE signature; signing them changes the bytes, breaks the hash check, and the stub aborts the next boot with "Kernel hash does not match". The signed entries that *must* report "signed" are `BOOTX64.EFI`, `systemd-bootx64.efi`, and `/boot/EFI/Linux/nixos-generation-*.efi`.
 
 Reboot. systemd-boot now sees the auto-enrollment payload in `/boot/loader/keys/auto/` and writes PK/KEK/db into the firmware autonomously (this only works because Setup Mode is active).
 
