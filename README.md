@@ -67,16 +67,17 @@ Root stays without a password (`PermitRootLogin = "no"`, sudo via `wheel`).
 
 ### Finish Secure Boot setup
 
-The first boot ran two systemd services from the Lanzaboote module:
+The first boot ran three systemd services:
 
-- `generate-sb-keys.service` — created PK/KEK/db under `/etc/secureboot/keys`.
-- `prepare-sb-auto-enroll.service` — exported signed `.auth` files to `/boot/loader/keys/auto/` (Microsoft keys included by default) and re-signed the ESP artifacts.
+- `generate-sb-keys.service` (Lanzaboote) — created PK/KEK/db under `/etc/secureboot/keys`.
+- `prepare-sb-auto-enroll.service` (Lanzaboote) — exported signed `.auth` files to `/boot/loader/keys/auto/` (Microsoft keys included by default) and re-signed the ESP artifacts.
+- `sign-bare-kernel.service` (`modules/system/boot.nix`) — signed `/boot/EFI/nixos/kernel-*.efi`. Lanzaboote signs the UKI at `/boot/EFI/Linux/` but leaves the raw kernel that NixOS' bootspec drops at `/boot/EFI/nixos/` unsigned, which `sbctl verify` flags.
 
 Verify before turning Secure Boot on:
 
 ```bash
 sudo sbctl verify          # all entries under /boot must report "signed"
-bootctl status             # expect: Secure Boot: disabled (setup)
+sudo bootctl status             # expect: Secure Boot: disabled (setup)
 ```
 
 Reboot. systemd-boot now sees the auto-enrollment payload in `/boot/loader/keys/auto/` and writes PK/KEK/db into the firmware autonomously (this only works because Setup Mode is active).
