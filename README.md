@@ -12,7 +12,7 @@ Before booting the installer:
 2. Put Secure Boot into **Setup Mode** — on ASRock B850: *Security → Secure Boot → Secure Boot Mode → Custom* and then *Clear Secure Boot Keys*. Without Setup Mode the auto-enrollment on first boot silently does nothing.
 3. Confirm UEFI mode (no CSM / Legacy boot).
 
-If Windows is already installed on the second NVMe with **BitLocker active**: have the recovery key ready (Microsoft account → Devices → BitLocker recovery keys). Clearing the firmware keys changes PCR 7, so the next Windows boot prompts for recovery once.
+If Windows is already installed on the second NVMe with **BitLocker active**: have the recovery key ready — sign in at <https://account.microsoft.com/devices/recoverykey> (or <https://aka.ms/myrecoverykey>) with the Microsoft account tied to the Windows install. Clearing the firmware keys changes PCR 7, so the next Windows boot prompts for recovery once.
 
 ### Installation
 
@@ -90,7 +90,7 @@ bootctl status             # expect: Secure Boot: enabled (user)
 sudo sbctl status          # Setup Mode: Disabled, Secure Boot: Enabled
 ```
 
-Boot into Windows via the BIOS boot picker (F11) once. With BitLocker active, expect a one-time recovery prompt — type the recovery key, BitLocker re-binds to the new PCR 7 value, future boots are silent.
+Boot into Windows via the BIOS boot picker (F11) once. With BitLocker active, expect a one-time recovery prompt — fetch the key from <https://account.microsoft.com/devices/recoverykey>, type it in, BitLocker re-binds to the new PCR 7 value, future boots are silent.
 
 ## Subsequent rebuilds
 
