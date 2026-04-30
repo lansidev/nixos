@@ -39,17 +39,41 @@ hosts/battlestation/
   default.nix                              # host aggregator (imports modules + sets hostName)
   hardware-configuration.nix               # hardware modules + nixpkgs.hostPlatform
 modules/
-  system/{base,boot,network,users}.nix     # system-wide modules, importable
-  desktop/niri.nix                         # Niri + greetd + PipeWire + xdg-portals
-  desktop/apps.nix                         # Firefox, 1Password (GUI+CLI), Steam, Discord
-home/lansing/default.nix                   # home-manager config for user `lansing`
+  system/
+    base.nix                               # locale, time, nix.settings, GC, zramSwap, allowUnfree
+    boot.nix                               # lanzaboote, linuxPackages_latest, amd_pstate
+    network.nix                            # NetworkManager, bluetooth, firewall
+    users.nix                              # user lansing + initialPassword + groups
+    openssh.nix                            # services.openssh + authorized keys
+  desktop/
+    niri.nix                               # programs.niri + greetd + xdg.portal + xkb
+    fonts.nix                              # Noto / Fira / JetBrains Nerd Fonts
+    audio.nix                              # PipeWire + rtkit
+    tools.nix                              # alacritty, fuzzel, waybar, swaylock, mako, ...
+  apps/
+    firefox.nix                            # programs.firefox
+    onepassword.nix                        # programs._1password{,-gui}
+    discord.nix                            # discord (system package)
+  gaming/
+    steam.nix                              # programs.steam + 32-bit graphics
+  development/
+    claude-code.nix                        # claude-code (system package)
+home/lansing/
+  default.nix                              # home-manager root: identity + zsh + git + imports
+  cli.nix                                  # ripgrep, fd, bat, eza, jq, fzf
 ```
 
 Rules:
-- New system modules go in `modules/system/<name>.nix`, then get imported in `hosts/battlestation/default.nix`.
-- Desktop/UX stuff goes in `modules/desktop/<name>.nix`.
-- User-specific program config goes in `home/lansing/`, NOT in `modules/`.
-- Secrets do not belong in this repo (it's public). If that ever becomes necessary: `sops-nix` or `agenix`, ask the user first.
+- One tool per file. Updating zsh or tmux or git should touch exactly one `.nix` file.
+- System-level modules go under `modules/<category>/<tool>.nix` with these categories:
+  - `system/` — OS fundamentals (locale, boot, networking, users, ssh, daemons that aren't tied to a UX)
+  - `desktop/` — Wayland session, fonts, audio, terminal/launcher/bar tools
+  - `apps/` — general GUI apps (browser, password manager, chat clients)
+  - `gaming/` — Steam and friends
+  - `development/` — dev tooling that needs system-level wiring (Docker, language daemons, …)
+  Each new module also has to be imported in `hosts/battlestation/default.nix`.
+- User-specific program config goes in `home/lansing/<tool>.nix` (home-manager), NOT in `modules/`.
+- Secrets do not belong in this repo. Encrypted-at-rest secrets in the flake (`sops-nix`/`agenix`) are out of scope; per-project `.envrc` + `op` (1Password CLI) is the supported runtime path. Ask the user before adding any encrypted-secret tooling.
 
 ## Conventions
 
@@ -64,13 +88,20 @@ Rules:
 ## Common tasks
 
 ### Add a system-wide package
-Edit `modules/system/base.nix` → extend `environment.systemPackages`. For DE-specific packages (Wayland tools etc.), prefer `modules/desktop/niri.nix` or `modules/desktop/apps.nix`.
+Pick the right category and create or extend a per-tool file:
+- OS toolbox / sysadmin CLIs → `modules/system/base.nix`
+- Wayland / DE helpers → `modules/desktop/tools.nix`
+- New GUI app (browser, chat, password manager, …) → new `modules/apps/<name>.nix`
+- Game launcher → `modules/gaming/<name>.nix`
+- Dev daemon / runtime that needs system-level wiring → `modules/development/<name>.nix`
+
+Don't mix categories in one file — one tool per file is the convention.
 
 ### Add a package only for user `lansing`
-Edit `home/lansing/default.nix` → extend `home.packages`.
+Either extend `home/lansing/cli.nix` (small CLI tools) or create a per-tool file in `home/lansing/<tool>.nix` and import it from `home/lansing/default.nix`.
 
 ### Enable a new service
-New file in `modules/system/` or `modules/desktop/`, then import it in `hosts/battlestation/default.nix`. Don't squeeze it into `base.nix` — that should stay system fundamentals.
+New file in the category that fits (`modules/system/`, `modules/development/`, …), then import it in `hosts/battlestation/default.nix`. Don't squeeze it into `base.nix` — that should stay system fundamentals.
 
 ### Update inputs
 ```bash
@@ -111,7 +142,7 @@ sudo nixos-rebuild test   --flake .#battlestation       # activates without sett
 - **`boot.lanzaboote.enable = true;`** replaces `systemd-boot` — don't re-enable `boot.loader.systemd-boot.enable`, the two are mutually exclusive. Lanzaboote provides its own systemd-boot stub. `autoGenerateKeys` + `autoEnrollKeys` (with default `includeMicrosoftKeys = true`) handle key provisioning on first boot; the firmware must be in **Setup Mode** at that point or auto-enrollment silently does nothing.
 - **`users.mutableUsers = true;`** is intentional — the user password is set with `passwd` after first boot, not in the repo. Don't add `initialPassword`.
 - **`home-manager` runs as a NixOS module** (`useGlobalPkgs = true`, `useUserPackages = true`). Don't mix in standalone-mode patterns.
-- **Unfree packages** (Discord, 1Password, Steam) require `nixpkgs.config.allowUnfree = true;` (set in `modules/system/base.nix`).
+- **Unfree packages** (Discord, 1Password, Steam, Claude Code) require `nixpkgs.config.allowUnfree = true;` (set in `modules/system/base.nix`).
 
 ## Hardware (quick ref)
 

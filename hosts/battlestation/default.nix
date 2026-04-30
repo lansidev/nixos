@@ -6,8 +6,16 @@
     ../../modules/system/boot.nix
     ../../modules/system/network.nix
     ../../modules/system/users.nix
+    ../../modules/system/openssh.nix
     ../../modules/desktop/niri.nix
-    ../../modules/desktop/apps.nix
+    ../../modules/desktop/fonts.nix
+    ../../modules/desktop/audio.nix
+    ../../modules/desktop/tools.nix
+    ../../modules/apps/firefox.nix
+    ../../modules/apps/onepassword.nix
+    ../../modules/apps/discord.nix
+    ../../modules/gaming/steam.nix
+    ../../modules/development/claude-code.nix
   ];
 
   networking.hostName = "battlestation";

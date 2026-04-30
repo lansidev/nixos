@@ -1,5 +1,9 @@
-{ pkgs, ... }:
+{ ... }:
 {
+  imports = [
+    ./cli.nix
+  ];
+
   home.username = "lansing";
   home.homeDirectory = "/home/lansing";
   home.stateVersion = "25.11";
@@ -20,13 +24,4 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
   };
-
-  home.packages = with pkgs; [
-    ripgrep
-    fd
-    bat
-    eza
-    jq
-    fzf
-  ];
 }

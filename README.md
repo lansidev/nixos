@@ -108,13 +108,23 @@ hosts/battlestation/
   default.nix                            # host imports + hostName + stateVersion
   hardware-configuration.nix             # AMD CPU, NVMe, AMD GPU (hand-tuned)
 modules/
-  system/base.nix                        # locale, time, nix settings, packages
-  system/boot.nix                        # Lanzaboote (Secure Boot), linuxPackages_latest, amd_pstate
-  system/network.nix                     # NetworkManager, bluetooth, firewall
-  system/users.nix                       # user lansing, openssh
-  desktop/niri.nix                       # Niri, greetd+tuigreet, PipeWire, fonts
-  desktop/apps.nix                       # Firefox, 1Password (GUI+CLI), Steam, Discord
-home/lansing/default.nix                 # Home Manager: zsh, git, CLI tools
+  system/
+    base.nix                             # locale, time, nix settings, OS toolbox
+    boot.nix                             # Lanzaboote (Secure Boot), linuxPackages_latest, amd_pstate
+    network.nix                          # NetworkManager, bluetooth, firewall
+    users.nix                            # user lansing
+    openssh.nix                          # SSH server + authorized keys
+  desktop/
+    niri.nix                             # Niri WM, greetd+tuigreet, xdg-portal
+    fonts.nix                            # Noto / Fira / JetBrains Nerd Fonts
+    audio.nix                            # PipeWire + rtkit
+    tools.nix                            # alacritty, fuzzel, waybar, swaylock, mako, ...
+  apps/                                  # firefox, onepassword (GUI+CLI), discord
+  gaming/                                # steam (+ 32-bit graphics)
+  development/                           # claude-code
+home/lansing/
+  default.nix                            # Home Manager root: identity + zsh + git
+  cli.nix                                # ripgrep, fd, bat, eza, jq, fzf
 ```
 
 ## Hardware
