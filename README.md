@@ -144,31 +144,26 @@ bootstrap:
 1. **1Password GUI** — open the app, sign in to the personal account, then go to
    *Settings → Developer* and enable **Use the SSH agent** (writes
    `~/.1password/agent.sock`, which `home/lansing/onepassword.nix` already wires
-   into `~/.ssh/config` and the SSH-based git signing path).
+   into `~/.ssh/config` and the SSH-based git signing path). Git is configured
+   to commit-sign by default in `home/lansing/git.nix` — once the GUI agent is
+   running, signed commits just work.
 
 2. **1Password CLI** — sign in once so `op` lookups don't prompt:
    ```bash
    eval $(op signin --account my.1password.eu)
    op whoami
    ```
-   The zsh init in `home/lansing/zsh.nix` will pick up the session for new shells
-   automatically and re-export it into tmux.
+   The zsh init in `home/lansing/zsh.nix` picks up the session for new shells
+   automatically and re-exports it into tmux.
 
-3. **Git commit signing (opt-in)** — open `home/lansing/git.nix`, replace the
-   `REPLACE_ME` ed25519 placeholder with the real public key
-   (`op read 'op://Private/GitHub Signing Key/public key'`), uncomment the
-   `gpg.format` / `commit.gpgsign` / `tag.gpgsign` block, set
-   `signByDefault = true;`, and enable the matching `xdg.configFile."git/allowed_signers"`
-   line below it. Rebuild. The private key never lands on disk — git signs through
-   the 1Password GUI agent.
-
-4. **Tailscale** — the daemon is on but the node isn't joined. As root, once:
+3. **Tailscale** — the daemon is on but the node isn't joined. Run the flake app
+   once; it prompts for the auth key and runs `tailscale up`:
    ```bash
-   tailscale up \
-     --auth-key="$(op read 'op://nixos/tailscale-authkey/credential')" \
-     --accept-dns --accept-routes
+   nix run .#tailscale-up                                                    # interactive prompt
+   op read 'op://nixos/tailscale-authkey/credential' | nix run .#tailscale-up  # piped
    ```
-   Subsequent reboots and rebuilds keep the node identity (`/var/lib/tailscale`).
+   Tailscale persists the node identity under `/var/lib/tailscale`, so this is a
+   one-shot per machine.
 
 ## Hardware
 

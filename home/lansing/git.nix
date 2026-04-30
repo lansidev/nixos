@@ -1,4 +1,15 @@
 { pkgs, ... }:
+let
+  email = "55317770+simlans@users.noreply.github.com";
+
+  # Public ed25519 SSH key used for signing git commits and tags.
+  # Public keys are designed to be shared — verifying signatures is the only
+  # operation they enable, and GitHub already publishes this key under
+  # https://api.github.com/users/simlans/ssh_signing_keys. The matching
+  # private key lives only in 1Password and is exposed at runtime via the
+  # GUI's ~/.1password/agent.sock (see home/lansing/onepassword.nix).
+  signingPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8KVxjQP4VDhBn3ux8LqstUDjXYHDDVbZgrfVouX4ty";
+in
 {
   home.packages = [ pkgs.gh ];
 
@@ -13,7 +24,8 @@
     settings = {
       user = {
         name = "simlans";
-        email = "55317770+simlans@users.noreply.github.com";
+        email = email;
+        signingkey = signingPublicKey;
       };
 
       init.defaultBranch = "main";
@@ -21,30 +33,17 @@
       push.autoSetupRemote = true;
       merge.conflictstyle = "diff3";
       diff.colorMoved = "default";
-      credential.helper = "${pkgs.gh}/bin/gh auth git-credential";
 
-      # SSH-based commit signing via the 1Password GUI agent
-      # (~/.1password/agent.sock, wired in onepassword.nix).
-      #
-      # To enable signing on this host:
-      #   1. In the 1Password GUI: Settings → Developer → enable
-      #      "Use the SSH agent" (the agent socket appears once the
-      #      GUI has been launched and signed in).
-      #   2. Replace the placeholder below with the matching public key:
-      #        op read 'op://Private/GitHub Signing Key/public key'
-      #   3. Flip `signByDefault = true;` and remove this note.
-      #
-      # gpg.format = "ssh";
-      # gpg.ssh.allowedSignersFile = "~/.config/git/allowed_signers";
-      # commit.gpgsign = true;
-      # tag.gpgsign = true;
-      # user.signingkey = "ssh-ed25519 REPLACE_ME";
+      gpg.format = "ssh";
+      gpg.ssh.allowedSignersFile = "~/.config/git/allowed_signers";
+
+      commit.gpgsign = true;
+      tag.gpgsign = true;
+
+      credential.helper = "${pkgs.gh}/bin/gh auth git-credential";
     };
   };
 
-  # Allowed signers file is set up alongside the key — keep this commented
-  # out until the key value is filled in above.
-  #
-  # xdg.configFile."git/allowed_signers".text =
-  #   "55317770+simlans@users.noreply.github.com ssh-ed25519 REPLACE_ME\n";
+  xdg.configFile."git/allowed_signers".text =
+    "${email} ${signingPublicKey}\n";
 }

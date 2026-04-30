@@ -20,22 +20,57 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, disko, lanzaboote, ... }: {
-    nixosConfigurations.battlestation = nixpkgs.lib.nixosSystem {
+  outputs = { self, nixpkgs, home-manager, disko, lanzaboote, ... }:
+    let
       system = "x86_64-linux";
-      specialArgs = { inherit self; };
-      modules = [
-        disko.nixosModules.disko
-        ./disko/battlestation.nix
-        lanzaboote.nixosModules.lanzaboote
-        ./hosts/battlestation
-        home-manager.nixosModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.users.lansing = import ./home/lansing;
-        }
-      ];
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    {
+      nixosConfigurations.battlestation = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit self; };
+        modules = [
+          disko.nixosModules.disko
+          ./disko/battlestation.nix
+          lanzaboote.nixosModules.lanzaboote
+          ./hosts/battlestation
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.lansing = import ./home/lansing;
+          }
+        ];
+      };
+
+      # `nix run .#tailscale-up` — bootstrap this node into the tailnet.
+      # Reads the auth key either from a TTY prompt or from stdin, so both
+      # interactive use and `op read 'op://nixos/tailscale-authkey/credential'
+      #   | nix run .#tailscale-up` work. Calls `sudo tailscale up` with
+      # the standard --accept-dns --accept-routes flags. Single-shot:
+      # tailscale persists the node identity under /var/lib/tailscale.
+      apps.${system}.tailscale-up = {
+        type = "app";
+        program = "${pkgs.writeShellApplication {
+          name = "tailscale-up";
+          runtimeInputs = [ pkgs.tailscale ];
+          text = ''
+            if [ ! -t 0 ]; then
+              key="$(cat)"
+            else
+              IFS= read -srp 'Tailscale auth key: ' key
+              printf '\n' >&2
+            fi
+            if [ -z "$key" ]; then
+              echo 'no auth key given, aborting' >&2
+              exit 1
+            fi
+            exec sudo tailscale up \
+              --auth-key="$key" \
+              --accept-dns \
+              --accept-routes
+          '';
+        }}/bin/tailscale-up";
+      };
     };
-  };
 }
