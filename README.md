@@ -126,14 +126,16 @@ modules/
 home/lansing/
   default.nix                            # Home Manager root: identity + imports
   cli.nix                                # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
-  zsh.nix                                # zsh + oh-my-zsh + plugins, aliases, history, 1P signin
-  tmux/                                  # tmux + pinned gpakosz/.tmux + tmux.conf.local
-  direnv.nix                             # direnv + nix-direnv
-  git.nix                                # git + gh + delta (signing setup is opt-in)
-  neovim.nix                             # neovim + dracula + nerdtree/coc/startify/snippets
-  kubernetes/                            # kubectl, k9s, fluxcd + k9s skin
-  golang.nix                             # go + gotools
   onepassword.nix                        # op-cache + IdentityAgent → 1P GUI agent
+  shell/
+    zsh.nix                              # zsh + oh-my-zsh + plugins, aliases, history, 1P signin
+    tmux/                                # tmux + pinned gpakosz/.tmux + tmux.conf.local
+    direnv.nix                           # direnv + nix-direnv
+  development/
+    git.nix                              # git + gh + delta (SSH signing on by default)
+    neovim.nix                           # neovim + dracula + nerdtree/coc/startify/snippets
+    kubernetes/                          # kubectl, k9s, fluxcd + k9s skin
+    golang.nix                           # go + gotools
 ```
 
 ## First-time setup after the install

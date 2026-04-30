@@ -63,26 +63,29 @@ modules/
 home/lansing/
   default.nix                              # home-manager root: identity + imports
   cli.nix                                  # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
-  zsh.nix                                  # zsh + oh-my-zsh + plugins + aliases + 1P signin
-  tmux/                                    # tmux + pinned gpakosz/.tmux + tmux.conf.local
-  direnv.nix                               # direnv + nix-direnv
-  git.nix                                  # git + gh + delta (signing setup is opt-in, see file)
-  neovim.nix                               # neovim + dracula + nerdtree/coc/startify/snippets
-  kubernetes/                              # kubectl, k9s, fluxcd + k9s skin
-  golang.nix                               # go + gotools
   onepassword.nix                          # op-cache binary + IdentityAgent → 1P GUI agent
+  shell/
+    zsh.nix                                # zsh + oh-my-zsh + plugins + aliases + 1P signin
+    tmux/                                  # tmux + pinned gpakosz/.tmux + tmux.conf.local
+    direnv.nix                             # direnv + nix-direnv
+  development/
+    git.nix                                # git + gh + delta (SSH signing on by default)
+    neovim.nix                             # neovim + dracula + nerdtree/coc/startify/snippets
+    kubernetes/                            # kubectl, k9s, fluxcd + k9s skin
+    golang.nix                             # go + gotools
 ```
 
 Rules:
 - One tool per file. Updating zsh or tmux or git should touch exactly one `.nix` file.
-- System-level modules go under `modules/<category>/<tool>.nix` with these categories:
-  - `system/` — OS fundamentals (locale, boot, networking, users, ssh, daemons that aren't tied to a UX)
-  - `desktop/` — Wayland session, fonts, audio, terminal/launcher/bar tools
-  - `apps/` — general GUI apps (browser, password manager, chat clients)
-  - `gaming/` — Steam and friends
-  - `development/` — dev tooling that needs system-level wiring (Docker, language daemons, …)
-  Each new module also has to be imported in `hosts/battlestation/default.nix`.
-- User-specific program config goes in `home/lansing/<tool>.nix` (home-manager), NOT in `modules/`.
+- The split between `modules/` and `home/lansing/` is **system-vs-user state**: anything that registers a daemon, opens a port, manages users/groups, drops a polkit policy, or owns `/etc` files goes under `modules/`; anything that's just user-level dotfiles + per-user CLI binaries lives under `home/lansing/`. Borderline cases (e.g. a CLI binary with no daemon): default to `home/lansing/`.
+- Both trees use the **same category names** so a tool is findable from its concept, not its scope. `modules/<category>/` and `home/lansing/<category>/` mirror each other:
+  - `system/` (modules only) — OS fundamentals (locale, boot, networking, users, ssh, …)
+  - `desktop/` (modules only) — Wayland session, fonts, audio, terminal/launcher/bar tools
+  - `apps/` (modules only) — general GUI apps (browser, password manager, chat clients)
+  - `gaming/` (modules only) — Steam and friends
+  - `development/` — dev tooling. System half (`modules/development/`) holds the daemons (Docker, …); user half (`home/lansing/development/`) holds the CLIs (git, kubectl, go, neovim, …).
+  - `shell/` (home only) — zsh, tmux, direnv — anything that shapes the interactive shell session.
+  Each new system module also has to be imported in `hosts/battlestation/default.nix`. New home-manager files get imported by their category's `default.nix` (e.g. `home/lansing/development/default.nix`).
 - Secrets do not belong in this repo. Encrypted-at-rest secrets in the flake (`sops-nix`/`agenix`) are out of scope; per-project `.envrc` + `op` (1Password CLI) is the supported runtime path. Ask the user before adding any encrypted-secret tooling.
 
 ## Conventions
@@ -108,7 +111,9 @@ Pick the right category and create or extend a per-tool file:
 Don't mix categories in one file — one tool per file is the convention.
 
 ### Add a package only for user `lansing`
-Either extend `home/lansing/cli.nix` (small CLI tools) or create a per-tool file in `home/lansing/<tool>.nix` and import it from `home/lansing/default.nix`.
+- Tiny generic CLI (anything you'd reach for outside dev work) → extend `home/lansing/cli.nix`.
+- Dev tool (language toolchain, k8s/cloud CLI, editor extension, git helper) → new file under `home/lansing/development/<tool>.nix`, then import from `home/lansing/development/default.nix`.
+- Shell-shaping tool (prompt, multiplexer, dir hook) → `home/lansing/shell/<tool>.nix` + import from `home/lansing/shell/default.nix`.
 
 ### Enable a new service
 New file in the category that fits (`modules/system/`, `modules/development/`, …), then import it in `hosts/battlestation/default.nix`. Don't squeeze it into `base.nix` — that should stay system fundamentals.

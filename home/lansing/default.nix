@@ -2,14 +2,9 @@
 {
   imports = [
     ./cli.nix
-    ./direnv.nix
-    ./git.nix
-    ./golang.nix
-    ./kubernetes
-    ./neovim.nix
     ./onepassword.nix
-    ./tmux
-    ./zsh.nix
+    ./shell
+    ./development
   ];
 
   home.username = "lansing";
