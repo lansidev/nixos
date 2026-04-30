@@ -1,0 +1,111 @@
+k9s:
+  body:
+    fgColor: cadetblue
+    bgColor: default
+    logoColor: orange
+    logoColorMsg: white
+    logoColorInfo: green
+    logoColorWarn: mediumvioletred
+    logoColorError: red
+  prompt:
+    fgColor: cadetblue
+    bgColor: default
+    suggestColor: dodgerblue
+    border:
+      command: aqua
+      default: seagreen
+  help:
+    fgColor: cadetblue
+    bgColor: default
+    sectionColor: green
+    keyColor: dodgerblue
+    numKeyColor: fuchsia
+  dialog:
+    fgColor: cadetblue
+    bgColor: default
+    buttonFgColor: black
+    buttonBgColor: darkslateblue
+    buttonFocusFgColor: black
+    buttonFocusBgColor: dodgerblue
+    labelFgColor: white
+    fieldFgColor: white
+  info:
+    sectionColor: white
+    fgColor: orange
+  frame:
+    border:
+      fgColor: dodgerblue
+      focusColor: lightskyblue
+    menu:
+      fgColor: white
+      keyColor: dodgerblue
+      numKeyColor: fuchsia
+    crumbs:
+      fgColor: black
+      bgColor: aqua
+      activeColor: orange
+    status:
+      newColor: lightskyblue
+      modifyColor: greenyellow
+      addColor: dodgerblue
+      pendingColor: darkorange
+      errorColor: orangered
+      highlightColor: aqua
+      killColor: mediumpurple
+      completedColor: lightslategray
+    title:
+      fgColor: aqua
+      bgColor: default
+      highlightColor: fuchsia
+      counterColor: papayawhip
+      filterColor: seagreen
+  views:
+    charts:
+      bgColor: default
+      dialBgColor: default
+      chartBgColor: default
+      defaultDialColors:
+        - palegreen
+        - orangered
+      defaultChartColors:
+        - palegreen
+        - orangered
+      resourceColors:
+        cpu:
+          - dodgerblue
+          - darkslateblue
+        mem:
+          - yellow
+          - goldenrod
+    table:
+      fgColor: aqua
+      bgColor: default
+      cursorFgColor: black
+      cursorBgColor: aqua
+      markColor: palegreen
+      header:
+        fgColor: white
+        bgColor: default
+        sorterColor: aqua
+    xray:
+      fgColor: aqua
+      bgColor: default
+      cursorColor: dodgerblue
+      cursorTextColor: black
+      graphicColor: cadetblue
+    yaml:
+      keyColor: steelblue
+      valueColor: papayawhip
+      colonColor: white
+    picker:
+      mainColor: white
+      focusColor: aqua
+      shortcutColor: aqua
+    logs:
+      fgColor: lightskyblue
+      bgColor: default
+      indicator:
+        fgColor: dodgerblue
+        bgColor: default
+        toggleOnColor: limegreen
+        toggleOffColor: gray

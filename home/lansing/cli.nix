@@ -5,7 +5,11 @@
     fd
     bat
     eza
-    jq
     fzf
+    jq
+    yq-go
+    tree
+    htop
+    file
   ];
 }

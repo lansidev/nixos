@@ -59,8 +59,16 @@ modules/
   development/
     claude-code.nix                        # claude-code (system package)
 home/lansing/
-  default.nix                              # home-manager root: identity + zsh + git + imports
-  cli.nix                                  # ripgrep, fd, bat, eza, jq, fzf
+  default.nix                              # home-manager root: identity + imports
+  cli.nix                                  # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
+  zsh.nix                                  # zsh + oh-my-zsh + plugins + aliases + 1P signin
+  tmux/                                    # tmux + pinned gpakosz/.tmux + tmux.conf.local
+  direnv.nix                               # direnv + nix-direnv
+  git.nix                                  # git + gh + delta (signing setup is opt-in, see file)
+  neovim.nix                               # neovim + dracula + nerdtree/coc/startify/snippets
+  kubernetes/                              # kubectl, k9s, fluxcd + k9s skin
+  golang.nix                               # go + gotools
+  onepassword.nix                          # op-cache binary + IdentityAgent → 1P GUI agent
 ```
 
 Rules:
@@ -143,6 +151,9 @@ sudo nixos-rebuild test   --flake .#battlestation       # activates without sett
 - **`users.mutableUsers = true;`** is intentional — the user password is set with `passwd` after first boot, not in the repo. Don't add `initialPassword`.
 - **`home-manager` runs as a NixOS module** (`useGlobalPkgs = true`, `useUserPackages = true`). Don't mix in standalone-mode patterns.
 - **Unfree packages** (Discord, 1Password, Steam, Claude Code) require `nixpkgs.config.allowUnfree = true;` (set in `modules/system/base.nix`).
+- **Git commit signing** in `home/lansing/git.nix` is shipped *off* — the public ed25519 key is a placeholder. Filling in the real key (and flipping `signByDefault = true`) is part of the post-install bootstrap, not a build-time step. Don't try to read it from 1Password at evaluation time; the `op` CLI is only available on the activated system.
+- **`programs.tmux.enable` is NOT used** — the upstream gpakosz/.tmux config sources `~/.tmux.conf.local` from `$HOME`, so we drop both files via `home.file` instead and rely on `pkgs.tmux` for the binary. Switching to `programs.tmux.enable` would generate a competing `~/.tmux.conf` and break the override mechanism.
+- **`op-cache`** is a prebuilt x86_64-linux binary from `simlans/direnv-libs`. The flake evaluates fine on aarch64-darwin (Mac) because nothing forces a build; the build only runs on the battlestation. Bumping the version means updating both the URL and the SRI hash in `home/lansing/onepassword.nix`.
 
 ## Hardware (quick ref)
 
@@ -157,6 +168,6 @@ sudo nixos-rebuild test   --flake .#battlestation       # activates without sett
 ## Out of scope (for now)
 
 - Multi-host setup (only `battlestation` exists)
-- Secrets management (`sops-nix`/`agenix`) — if needed, coordinate with user first
+- Encrypted-at-rest secrets in the flake (`sops-nix`/`agenix`) — runtime secrets via `op` + `direnv` are supported; everything else needs an explicit OK
 - Custom kernel builds
 - nixos-anywhere for remote installs (bootstrap runs locally from the USB stick)

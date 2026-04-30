@@ -123,9 +123,43 @@ modules/
   gaming/                                # steam (+ 32-bit graphics)
   development/                           # claude-code
 home/lansing/
-  default.nix                            # Home Manager root: identity + zsh + git
-  cli.nix                                # ripgrep, fd, bat, eza, jq, fzf
+  default.nix                            # Home Manager root: identity + imports
+  cli.nix                                # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
+  zsh.nix                                # zsh + oh-my-zsh + plugins, aliases, history, 1P signin
+  tmux/                                  # tmux + pinned gpakosz/.tmux + tmux.conf.local
+  direnv.nix                             # direnv + nix-direnv
+  git.nix                                # git + gh + delta (signing setup is opt-in)
+  neovim.nix                             # neovim + dracula + nerdtree/coc/startify/snippets
+  kubernetes/                            # kubectl, k9s, fluxcd + k9s skin
+  golang.nix                             # go + gotools
+  onepassword.nix                        # op-cache + IdentityAgent → 1P GUI agent
 ```
+
+## First-time setup after the install
+
+Once the system boots into Niri and `passwd` has been changed, finish the per-user
+bootstrap:
+
+1. **1Password GUI** — open the app, sign in to the personal account, then go to
+   *Settings → Developer* and enable **Use the SSH agent** (writes
+   `~/.1password/agent.sock`, which `home/lansing/onepassword.nix` already wires
+   into `~/.ssh/config` and the SSH-based git signing path).
+
+2. **1Password CLI** — sign in once so `op` lookups don't prompt:
+   ```bash
+   eval $(op signin --account my.1password.eu)
+   op whoami
+   ```
+   The zsh init in `home/lansing/zsh.nix` will pick up the session for new shells
+   automatically and re-export it into tmux.
+
+3. **Git commit signing (opt-in)** — open `home/lansing/git.nix`, replace the
+   `REPLACE_ME` ed25519 placeholder with the real public key
+   (`op read 'op://Private/GitHub Signing Key/public key'`), uncomment the
+   `gpg.format` / `commit.gpgsign` / `tag.gpgsign` block, set
+   `signByDefault = true;`, and enable the matching `xdg.configFile."git/allowed_signers"`
+   line below it. Rebuild. The private key never lands on disk — git signs through
+   the 1Password GUI agent.
 
 ## Hardware
 
