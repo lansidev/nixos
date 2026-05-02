@@ -412,6 +412,11 @@ bind -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft=
 # set -g prefix C-a
 # bind C-a send-prefix
 
+# Disable the secondary C-a prefix that oh-my-tmux sets up by default,
+# so Ctrl+A passes through to the shell (readline beginning-of-line).
+set -gu prefix2
+unbind C-a
+
 # if you don't want Oh my tmux! to alter a binding or a setting, use #!important
 # bind c new-window -c '#{pane_current_path}' #!important
 
