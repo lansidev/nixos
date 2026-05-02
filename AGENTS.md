@@ -71,6 +71,7 @@ home/lansing/
     tmux/                                  # tmux + pinned gpakosz/.tmux + tmux.conf.local
     direnv.nix                             # direnv + nix-direnv
   development/
+    claude-code.nix                        # ~/.claude/settings.json (model, perms, attribution off)
     git.nix                                # git + gh + delta (SSH signing on by default)
     neovim.nix                             # neovim + dracula + nerdtree/coc/startify/snippets
     kubernetes/                            # kubectl, k9s, fluxcd + k9s skin
@@ -102,7 +103,7 @@ Rules:
 
 ## Commits
 
-- **Do not add a `Co-Authored-By: Claude …` (or any other AI assistant) trailer to commits in this repo.** Commits go in under the human author's identity only. Claude Code's default commit instructions set this trailer automatically — override that here. The history is public and the trailer adds nothing the diff doesn't already say.
+- **Do not add a `Co-Authored-By: Claude …` (or any other AI assistant) trailer to commits in this repo.** Commits go in under the human author's identity only. The history is public and the trailer adds nothing the diff doesn't already say. For Claude Code specifically the harness is silenced via `attribution.commit = ""` / `attribution.pr = ""` in `~/.claude/settings.json`, which is itself declared in `home/lansing/development/claude-code.nix`. Other agents (Cursor, Codex, …) honour this rule by reading AGENTS.md.
 
 ## Common tasks
 
@@ -169,6 +170,7 @@ sudo nixos-rebuild test   --flake .#battlestation       # activates without sett
 - **`programs.tmux.enable` is NOT used** — the upstream gpakosz/.tmux config sources `~/.tmux.conf.local` from `$HOME`, so we drop both files via `home.file` instead and rely on `pkgs.tmux` for the binary. Switching to `programs.tmux.enable` would generate a competing `~/.tmux.conf` and break the override mechanism.
 - **`op-cache`** is a prebuilt x86_64-linux binary from `simlans/direnv-libs`. The flake evaluates fine on aarch64-darwin because nothing forces a build; the build only runs on the battlestation. Bumping the version means updating both the URL and the SRI hash in `home/lansing/onepassword.nix`.
 - **`claude-code` is the only package pulled from `nixpkgs-unstable`** (see `modules/development/claude-code.nix`). The 25.11 release branch lags ~30 patch versions behind upstream and ships without the latest model IDs (Opus 4.7 etc.), which the CLI hardcodes. `inputs` is threaded through `specialArgs` in `flake.nix` so the module can `import inputs.nixpkgs-unstable {...}` itself with `allowUnfree = true`. Don't add other packages to this pattern unless they have the same "stable channel can't keep up" problem — every additional consumer multiplies eval cost.
+- **`~/.claude/settings.json` is a read-only symlink into the Nix store**, owned by `home/lansing/development/claude-code.nix`. The in-app `/config` and `/model` slash commands cannot persist changes — edit the nix file and run `home-manager switch` (or `nixos-rebuild switch`) instead. Everything else under `~/.claude/` (sessions, history, projects, plugins) stays mutable because home-manager only owns that one path. On a fresh machine the existing pre-install `~/.claude/settings.json` (if any) must be removed before the first activation, otherwise home-manager refuses to overwrite it.
 - **Tailscale auth key is *not* in the flake** — `services.tailscale.enable = true` only starts the daemon. First-boot bootstrap goes through the `nix run .#tailscale-up` flake app (defined in `flake.nix`); it prompts for the key on a TTY or reads it from stdin so `op read 'op://nixos/tailscale-nixos-authkey/credential' | nix run .#tailscale-up` works. After the join, `/var/lib/tailscale` persists the node identity and the app isn't needed again.
 - **Docker group membership lives in `modules/system/users.nix`**, not in `modules/development/docker.nix`. Keeping all of `lansing`'s extraGroups in one place avoids "is the user in the right groups?" hunting across files.
 - **Auto-tmux trigger keys off `$ALACRITTY_WINDOW_ID`** in `home/lansing/shell/zsh.nix`. If the daily-driver terminal changes (e.g. to foot or Ghostty), update that env-var check — otherwise zsh stops auto-attaching to the `main` session. Powerlevel10k inherits the JetBrains Nerd Font from `modules/desktop/fonts.nix`; without a Nerd Font the right-prompt icons render as tofu.
