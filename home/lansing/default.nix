@@ -17,7 +17,6 @@
     name = "Adwaita";
     size = 20;
     gtk.enable = true;
-    x11.enable = true;
   };
 
   programs.home-manager.enable = true;
