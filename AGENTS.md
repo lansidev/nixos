@@ -100,6 +100,10 @@ Rules:
 - No `mkForce`/`mkOverride` without good reason; if used, justify in a comment.
 - All comments and docstrings in English.
 
+## Commits
+
+- **Do not add a `Co-Authored-By: Claude …` (or any other AI assistant) trailer to commits in this repo.** Commits go in under the human author's identity only. Claude Code's default commit instructions set this trailer automatically — override that here. The history is public and the trailer adds nothing the diff doesn't already say.
+
 ## Common tasks
 
 ### Add a system-wide package
