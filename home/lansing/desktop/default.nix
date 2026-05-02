@@ -6,5 +6,6 @@
     ./niri.nix
     ./swaylock.nix
     ./waybar.nix
+    ./wlogout.nix
   ];
 }

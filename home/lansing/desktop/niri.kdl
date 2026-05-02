@@ -627,4 +627,7 @@ binds {
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.
     Mod+Shift+P { power-off-monitors; }
+
+    // Open wlogout power menu (lock/logout/suspend/reboot/shutdown).
+    Mod+Shift+End { spawn "wlogout"; }
 }
