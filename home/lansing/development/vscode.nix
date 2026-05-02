@@ -4,6 +4,12 @@
     enable = true;
     package = pkgs.vscode;
 
+    profiles.default.userSettings = {
+      "files.autoSave" = "afterDelay";
+      "git.confirmSync" = false;
+      "git.autofetch" = true;
+    };
+
     # `pkgs.vscode-marketplace` is provided by the
     # `nix-vscode-extensions` overlay registered in
     # `modules/development/vscode.nix`. Names are lowercased
