@@ -26,6 +26,7 @@
       svelte.svelte-vscode
       adamhartford.vscode-base64
       jnoortheen.nix-ide
+      kdl-org.kdl
     ];
   };
 }
