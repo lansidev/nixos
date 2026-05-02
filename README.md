@@ -142,7 +142,7 @@ home/lansing/
   cli.nix                                # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
   onepassword.nix                        # op-cache + IdentityAgent → 1P GUI agent
   shell/
-    zsh.nix                              # zsh + oh-my-zsh + Powerlevel10k, aliases, history, 1P signin, auto-tmux
+    zsh.nix                              # zsh + oh-my-zsh + Powerlevel10k, aliases, history, auto-tmux
     p10k/p10k.zsh                        # Powerlevel10k config (lean, kubecontext-aware right prompt)
     tmux/                                # tmux + pinned gpakosz/.tmux + tmux.conf.local
     direnv.nix                           # direnv + nix-direnv
@@ -157,22 +157,22 @@ home/lansing/
 
 Once the system boots into Niri, finish the per-user bootstrap:
 
-1. **1Password GUI** — open the app, sign in to the personal account, then go to
-   *Settings → Developer* and enable **Use the SSH agent** (writes
-   `~/.1password/agent.sock`, which `home/lansing/onepassword.nix` already wires
-   into `~/.ssh/config` and the SSH-based git signing path). Git is configured
-   to commit-sign by default in `home/lansing/git.nix` — once the GUI agent is
-   running, signed commits just work.
+1. **1Password GUI** — open the app, sign in to the personal account, then in
+   *Settings → Developer* enable both:
+   - **Use the SSH agent** — writes `~/.1password/agent.sock`, which
+     `home/lansing/onepassword.nix` already wires into `~/.ssh/config` and the
+     SSH-based git signing path. Git is configured to commit-sign by default in
+     `home/lansing/git.nix` — once the GUI agent is running, signed commits
+     just work.
+   - **Integrate with 1Password CLI** — lets `op` authenticate via the desktop
+     app (system auth / biometrics) instead of prompting for the master
+     password on every new shell. Without this, every fresh zsh (e.g. a new
+     VSCode integrated terminal) would re-run `op signin` because
+     `OP_SESSION_*` env vars don't cross process trees. With it, `op whoami`
+     queries the GUI daemon and the session is shared by every shell on the
+     desktop session.
 
-2. **1Password CLI** — sign in once so `op` lookups don't prompt:
-   ```bash
-   eval $(op signin --account my.1password.eu)
-   op whoami
-   ```
-   The zsh init in `home/lansing/zsh.nix` picks up the session for new shells
-   automatically and re-exports it into tmux.
-
-3. **Tailscale** — the daemon is on but the node isn't joined. Run the flake app
+2. **Tailscale** — the daemon is on but the node isn't joined. Run the flake app
    once; it prompts for the auth key and runs `tailscale up`:
    ```bash
    nix run .#tailscale-up                                                    # interactive prompt
