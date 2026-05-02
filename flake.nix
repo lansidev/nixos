@@ -31,12 +31,30 @@
       url = "github:nix-community/nix-vscode-extensions";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Pre-commit framework: provides the devShell `shellHook` that installs
+    # `.git/hooks/pre-commit`. Runs `gitleaks` on staged content so secrets
+    # can't land in the public history by accident.
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, lanzaboote, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, disko, lanzaboote, git-hooks, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      pre-commit-check = git-hooks.lib.${system}.run {
+        src = ./.;
+        hooks.gitleaks = {
+          enable = true;
+          name = "gitleaks";
+          description = "Scan staged content for secrets";
+          entry = "${pkgs.gitleaks}/bin/gitleaks protect --staged --redact --verbose";
+          pass_filenames = false;
+        };
+      };
     in
     {
       nixosConfigurations.battlestation = nixpkgs.lib.nixosSystem {
@@ -85,6 +103,16 @@
               --accept-routes
           '';
         }}/bin/tailscale-up";
+      };
+
+      # Pre-commit hooks (gitleaks). `nix flake check` runs the suite; the
+      # devShell's shellHook installs `.git/hooks/pre-commit` so direnv users
+      # get the guard automatically on first entry into the repo.
+      checks.${system}.pre-commit = pre-commit-check;
+
+      devShells.${system}.default = pkgs.mkShell {
+        inherit (pre-commit-check) shellHook;
+        buildInputs = pre-commit-check.enabledPackages;
       };
     };
 }

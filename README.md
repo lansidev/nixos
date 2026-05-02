@@ -103,6 +103,16 @@ git clone https://github.com/simlans/nixos-workstation ~/nixos-workstation
 sudo nixos-rebuild switch --flake ~/nixos-workstation#battlestation
 ```
 
+After cloning, run `direnv allow` in the repo root once. That triggers the
+flake devShell's `shellHook` (provided by `git-hooks.nix`), which installs a
+`gitleaks` pre-commit hook into `.git/hooks/`. The hook blocks any commit
+that stages a private key or other high-entropy secret pattern. To run the
+scan manually:
+
+```bash
+nix flake check
+```
+
 ## Layout
 
 ```
