@@ -57,6 +57,8 @@ modules/
     firefox.nix                            # programs.firefox + 1P extension via policy
     onepassword.nix                        # programs._1password{,-gui}
     discord.nix                            # discord (system package)
+    signal.nix                             # signal-desktop (system package)
+    spotify.nix                            # spotify (system package, unfree)
   gaming/
     steam.nix                              # programs.steam + 32-bit graphics
   development/

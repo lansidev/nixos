@@ -16,6 +16,8 @@
     ../../modules/apps/firefox.nix
     ../../modules/apps/onepassword.nix
     ../../modules/apps/discord.nix
+    ../../modules/apps/signal.nix
+    ../../modules/apps/spotify.nix
     ../../modules/gaming/steam.nix
     ../../modules/development/claude-code.nix
     ../../modules/development/docker.nix
