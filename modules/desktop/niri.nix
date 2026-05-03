@@ -21,6 +21,10 @@ in
   # up as a systemd user service tied to graphical-session.target.
   environment.systemPackages = [ pkgs.xwayland-satellite ];
   environment.sessionVariables.DISPLAY = ":0";
+  # Tells nixpkgs Electron/Chromium wrappers (spotify, vscode, …) to launch
+  # natively on Wayland. Without this they fall back to XWayland and ignore
+  # niri's prefer-no-csd, leaving CSD title bars in place.
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
   systemd.user.services.xwayland-satellite = {
     description = "Xwayland outside your Wayland";

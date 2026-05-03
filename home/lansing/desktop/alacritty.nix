@@ -10,6 +10,7 @@ in
 {
   programs.alacritty = {
     enable = true;
+    settings.window.decorations = "None";
     settings.keyboard.bindings = [
       {
         key = "Return";

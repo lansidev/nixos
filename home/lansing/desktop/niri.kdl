@@ -288,11 +288,13 @@ hotkey-overlay {
 }
 
 // Ask clients to omit client-side decorations and inform them that they are tiled.
-// This removes the rounded corners GTK/Adwaita apps draw themselves.
+// Removes app-drawn title bars (Alacritty, Spotify, GTK/Adwaita); rounded
+// corners still come from geometry-corner-radius + clip-to-geometry below.
 // Apps need to be restarted for this to take effect.
-// Disabled while Noctalia drives the look — niri's geometry-corner-radius
-// rule below gives us consistent corners on every window instead.
-// prefer-no-csd
+// Trade-off: without CSD, apps no longer draw resize edges at the window
+// border. Use niri's built-in gestures instead — Mod+LMB drag to move,
+// Mod+RMB drag to resize (works for floating and tiled).
+prefer-no-csd
 
 // You can change the path where screenshots are saved.
 // A ~ at the front will be expanded to the home directory.
