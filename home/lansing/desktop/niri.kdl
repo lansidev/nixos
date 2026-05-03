@@ -277,10 +277,12 @@ layout {
 // See the binds section below for more spawn examples.
 
 // Start the Noctalia shell (bar, launcher, control center, wallpaper module).
-spawn-at-startup "noctalia-shell"
-
-// To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
-// spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
+// NOCTALIA_REALNAME overrides the lock-screen "Welcome back <name>" line
+// (see HostService.qml displayName precedence). Pulled from 1Password via
+// op-cache so the real name never lands in /nix/store; same pattern as
+// home/lansing/development/git.nix. Falls back silently to $USER if the
+// cache miss / agent locked.
+spawn-sh-at-startup "NOCTALIA_REALNAME=\"$(op-cache read 'op://Private/GitHub/name')\" exec noctalia-shell"
 
 hotkey-overlay {
     // Uncomment this line to disable the "Important Hotkeys" pop-up at startup.
