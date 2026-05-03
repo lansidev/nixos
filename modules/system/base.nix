@@ -45,6 +45,7 @@
     file
     pciutils
     usbutils
+    smartmontools
   ];
 
   programs.zsh.enable = true;
