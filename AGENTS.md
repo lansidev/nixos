@@ -52,7 +52,7 @@ modules/
     keyboard-layout.nix                    # `lansing.desktop.keyboardLayout` option (ansi/iso) — toggles XKB layout + niri keybinds
     fonts.nix                              # Noto / Fira / JetBrains Nerd Fonts
     audio.nix                              # PipeWire + rtkit
-    tools.nix                              # fuzzel, waybar, mako, ...
+    tools.nix                              # mako, wl-clipboard, grim, slurp, ...
     keyring.nix                            # gnome-keyring (Secret Service) + PAM auto-unlock + passwd sync
   apps/
     firefox.nix                            # programs.firefox + 1P extension via policy
