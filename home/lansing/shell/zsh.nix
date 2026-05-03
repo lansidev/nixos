@@ -68,10 +68,12 @@
       export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
       export COLORTERM=truecolor
 
-      # Auto-attach to a tmux session named "main" when launched from Alacritty.
-      # $ALACRITTY_WINDOW_ID is exported by Alacritty since 0.13.
+      # Start a fresh tmux session per Alacritty window so windows stay
+      # isolated — no shared window list across terminals.
+      # $ALACRITTY_WINDOW_ID (exported by Alacritty since 0.13) gives each
+      # session a stable, distinct name visible in `tmux ls`.
       if command -v tmux >/dev/null && [ -z "$TMUX" ] && [ -n "$ALACRITTY_WINDOW_ID" ]; then
-        tmux attach-session -t main 2>/dev/null || tmux new-session -s main
+        tmux new-session -s "alacritty-$ALACRITTY_WINDOW_ID"
       fi
     '';
   };
