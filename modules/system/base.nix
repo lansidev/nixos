@@ -24,9 +24,8 @@
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     auto-optimise-store = true;
-    # Honor the cachix substituter declared in flake.nix even when nix
-    # is invoked from a non-root user shell (where the flake-level
-    # `nixConfig` is ignored because the caller isn't a trusted user).
+    # Binary cache for Noctalia + Quickshell — without it, every shell
+    # update recompiles Quickshell and its Qt deps from source.
     extra-substituters = [ "https://noctalia.cachix.org" ];
     extra-trusted-public-keys = [
       "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
