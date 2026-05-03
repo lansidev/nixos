@@ -120,7 +120,7 @@ layout {
     background-color "transparent"
 
     // Set gaps around windows in logical pixels.
-    gaps 3
+    gaps 6
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -351,7 +351,7 @@ window-rule {
 // Rounded corners for every window — niri-managed via geometry, not GTK CSD.
 // Noctalia recommends radius 20 for its modern look.
 window-rule {
-    geometry-corner-radius 20
+    geometry-corner-radius 12
     clip-to-geometry true
 }
 
