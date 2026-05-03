@@ -1,9 +1,45 @@
-{ inputs, ... }:
+# Reference: https://docs.noctalia.dev/v4/getting-started/nixos/
+{ config, inputs, ... }:
 {
   imports = [ inputs.noctalia.homeModules.default ];
 
   programs.noctalia-shell = {
     enable = true;
-    # settings = { ... };  # befüllen wir in der Theming-Phase
+    settings = {
+      colorSchemes = {
+        predefinedScheme = "Catppuccin";
+        darkMode = true;
+        useWallpaperColors = false;
+      };
+      wallpaper = {
+        enabled = true;
+        directory = "${config.home.homeDirectory}/Pictures/wallpapers";
+      };
+      hooks = {
+        enabled = true;
+        startup = ''noctalia-shell ipc call wallpaper random ""'';
+      };
+      general.enableShadows = false;
+      bar.widgets = {
+        left = [
+          { id = "Launcher"; }
+          { id = "Clock"; }
+          { id = "SystemMonitor"; }
+          { id = "ActiveWindow"; maxWidth = 500; }
+        ];
+        center = [
+          { id = "Workspace"; }
+        ];
+        right = [
+          { id = "MediaMini"; maxWidth = 500; }
+          { id = "Tray"; }
+          { id = "NotificationHistory"; }
+          { id = "Battery"; }
+          { id = "Volume"; }
+          { id = "Brightness"; }
+          { id = "ControlCenter"; }
+        ];
+      };
+    };
   };
 }
