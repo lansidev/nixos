@@ -40,7 +40,11 @@
           { id = "ActiveWindow"; maxWidth = 500; }
         ];
         center = [
-          { id = "Workspace"; }
+          {
+            id = "Workspace";
+            labelMode = "name";
+            characterCount = 1;
+          }
         ];
         right = [
           { id = "MediaMini"; maxWidth = 500; }

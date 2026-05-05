@@ -12,4 +12,11 @@
   # gnome-keyring's agent has no keys. The 1P agent socket is created by
   # the GUI when "Use SSH agent" is enabled in 1Password → Developer.
   environment.sessionVariables.SSH_AUTH_SOCK = "$HOME/.1password/agent.sock";
+
+  lansing.desktop.niri.appWindowRules = [
+    {
+      match.app-id = "^1password$";
+      openOnWorkspace = "passwords";
+    }
+  ];
 }

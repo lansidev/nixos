@@ -41,4 +41,10 @@
         scale 1.5
     }
   '';
+
+  # Pin the comms workspace to the laptop panel so Slack/Discord
+  # always land there even when an external monitor is plugged in.
+  lansing.desktop.niri.workspaceOutputs = {
+    communication = "eDP-1";
+  };
 }

@@ -1,4 +1,4 @@
-{ osConfig, ... }:
+{ lib, osConfig, ... }:
 let
   keys =
     if osConfig.lansing.desktop.keyboardLayout == "iso" then {
@@ -18,6 +18,37 @@ let
       heightDec = "Mod+Shift+Minus";
       heightInc = "Mod+Shift+Equal";
     };
+
+  niriCfg = osConfig.lansing.desktop.niri;
+
+  renderWorkspace = name:
+    let
+      output = niriCfg.workspaceOutputs.${name} or null;
+    in
+    if output == null then
+      "workspace \"${name}\""
+    else
+      "workspace \"${name}\" {\n    open-on-output \"${output}\"\n}";
+
+  workspacesKdl = lib.concatMapStringsSep "\n" renderWorkspace niriCfg.workspaces;
+
+  renderMatch = m:
+    lib.concatStringsSep " "
+      (lib.mapAttrsToList (k: v: "${k}=\"${v}\"") m);
+
+  renderRule = rule:
+    let
+      lines =
+        [ "    match ${renderMatch rule.match}" ]
+        ++ lib.optional (rule.openOnWorkspace != null)
+            "    open-on-workspace \"${rule.openOnWorkspace}\""
+        ++ lib.optional (rule.openFloating != null)
+            "    open-floating ${lib.boolToString rule.openFloating}";
+    in
+    "window-rule {\n" + lib.concatStringsSep "\n" lines + "\n}";
+
+  appWindowRulesKdl =
+    lib.concatMapStringsSep "\n\n" renderRule niriCfg.appWindowRules;
 in
 {
   xdg.configFile."niri/config.kdl".text = builtins.replaceStrings
@@ -30,6 +61,8 @@ in
       "@KEY_HEIGHT_DEC@"
       "@KEY_HEIGHT_INC@"
       "@OUTPUTS@"
+      "@WORKSPACES@"
+      "@APP_WINDOW_RULES@"
     ]
     [
       keys.help
@@ -40,6 +73,8 @@ in
       keys.heightDec
       keys.heightInc
       osConfig.lansing.desktop.niriOutputs
+      workspacesKdl
+      appWindowRulesKdl
     ]
     (builtins.readFile ./niri.kdl);
 }

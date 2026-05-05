@@ -108,6 +108,13 @@ input {
 
 @OUTPUTS@
 
+// Named workspaces declared by lansing.desktop.niri.workspaces (system option).
+// Niri assigns stable indices 1..N in declaration order, so Mod+1 focuses the
+// first entry, etc. App modules route windows here via per-app
+// window-rules contributed through lansing.desktop.niri.appWindowRules,
+// rendered further down in the window-rules section.
+@WORKSPACES@
+
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Layout
@@ -368,6 +375,11 @@ window-rule {
     }
 }
 
+// Per-app window rules contributed by individual app modules (modules/apps/*),
+// aggregated through lansing.desktop.niri.appWindowRules. Empty if no app on
+// this host declares a rule.
+@APP_WINDOW_RULES@
+
 // Noctalia's own wallpaper module gets the backdrop slot, so the overview
 // shows the wallpaper through transparent layout.background-color.
 layer-rule {
@@ -572,6 +584,10 @@ binds {
     //
     // For example, with 2 workspaces + 1 empty, indices 3, 4, 5 and so on
     // will all refer to the 3rd workspace.
+    //
+    // Named workspaces come from lansing.desktop.niri.workspaces — niri
+    // assigns them stable indices 1..N in declaration order, so Mod+1
+    // focuses the first named workspace, Mod+2 the second, etc.
     Mod+1 { focus-workspace 1; }
     Mod+2 { focus-workspace 2; }
     Mod+3 { focus-workspace 3; }
