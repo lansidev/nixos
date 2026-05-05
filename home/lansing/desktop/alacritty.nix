@@ -11,6 +11,12 @@ in
   programs.alacritty = {
     enable = true;
     settings.window.decorations = "None";
+    settings.font = {
+      normal.family = "JetBrainsMono Nerd Font";
+      bold.family = "JetBrainsMono Nerd Font";
+      italic.family = "JetBrainsMono Nerd Font";
+      bold_italic.family = "JetBrainsMono Nerd Font";
+    };
     settings.keyboard.bindings = [
       {
         key = "Return";

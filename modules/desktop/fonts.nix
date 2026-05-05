@@ -1,11 +1,13 @@
 { pkgs, ... }:
 {
   fonts.packages = with pkgs; [
+    nerd-fonts.jetbrains-mono
     noto-fonts
     noto-fonts-color-emoji
-    fira-code
-    fira-code-symbols
-    nerd-fonts.fira-code
-    nerd-fonts.jetbrains-mono
   ];
+
+  fonts.fontconfig.defaultFonts = {
+    monospace = [ "JetBrainsMono Nerd Font" ];
+    emoji = [ "Noto Color Emoji" ];
+  };
 }

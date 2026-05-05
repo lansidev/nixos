@@ -27,6 +27,8 @@ in
       "files.autoSave" = "afterDelay";
       "git.confirmSync" = false;
       "git.autofetch" = true;
+      "editor.fontFamily" = "'JetBrainsMono Nerd Font', monospace";
+      "terminal.integrated.fontFamily" = "JetBrainsMono Nerd Font";
     };
 
     # `pkgs.vscode-marketplace` is provided by the
