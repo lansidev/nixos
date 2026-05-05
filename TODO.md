@@ -6,3 +6,6 @@
 - [ ] Rename Tailscale host — "battlestation" is already taken by the Windows machine
 - [ ] Install OpenCloud
 - [ ] Install a suitable file manager
+- [ ] Readd Mod+D besides Mod+Space to open app launcher
+- [ ] Use Noctalia Login screen
+- [ ] Add own workspace "gaming" for Steam
