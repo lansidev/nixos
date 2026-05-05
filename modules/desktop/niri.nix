@@ -14,7 +14,7 @@ in
   options.lansing.desktop.niri = {
     workspaces = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "passwords" "communication" "main" ];
+      default = [ "passwords" "communication" "main" "gaming" ];
       description = ''
         Named niri workspaces in declaration order. They are persistent —
         always present, even when empty. Niri assigns them stable
