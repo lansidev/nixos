@@ -677,6 +677,11 @@ binds {
     Ctrl+Print { screenshot-screen; }
     Alt+Print { screenshot-window; }
 
+    // macOS-style screenshot bindings (Cmd+Shift+3/4/5 → Mod+Shift+3/4/5).
+    Mod+Shift+3 { screenshot-screen; }
+    Mod+Shift+4 { screenshot; }
+    Mod+Shift+5 { screenshot-window; }
+
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
     // so they may, for example, forward the key presses as-is to a remote machine.
