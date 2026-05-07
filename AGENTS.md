@@ -79,13 +79,14 @@ modules/
     docker.nix                             # virtualisation.docker (lansing in users.nix's groups)
 home/lansing/
   default.nix                              # home-manager root: identity + imports
-  cli.nix                                  # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
+  cli.nix                                  # ripgrep, fd, bat, eza, jq, yq, tree, htop, file
   onepassword.nix                          # op-cache binary + IdentityAgent → 1P GUI agent
   shell/
     zsh.nix                                # zsh + oh-my-zsh + p10k + aliases + 1P signin + Alacritty auto-tmux
     p10k/p10k.zsh                          # Powerlevel10k wizard output (lean, kubecontext, 1-line)
     tmux/                                  # tmux + pinned gpakosz/.tmux + tmux.conf.local
     direnv.nix                             # direnv + nix-direnv
+    fzf.nix                                # fzf + zsh integration (Ctrl+R history, Ctrl+T files, Alt+C cd)
   development/
     claude-code.nix                        # ~/.claude/settings.json (model, perms, attribution off, tmux session-state hooks)
     git.nix                                # git + gh + delta (SSH signing on by default)

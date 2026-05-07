@@ -5,7 +5,6 @@
     fd
     bat
     eza
-    fzf
     jq
     yq-go
     tree

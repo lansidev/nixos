@@ -187,13 +187,14 @@ modules/
   development/                           # claude-code (unstable), docker
 home/lansing/
   default.nix                            # Home Manager root: identity + imports
-  cli.nix                                # ripgrep, fd, bat, eza, fzf, jq, yq, tree, htop, file
+  cli.nix                                # ripgrep, fd, bat, eza, jq, yq, tree, htop, file
   onepassword.nix                        # op-cache + IdentityAgent → 1P GUI agent
   shell/
     zsh.nix                              # zsh + oh-my-zsh + Powerlevel10k, aliases, history, auto-tmux
     p10k/p10k.zsh                        # Powerlevel10k config (lean, kubecontext-aware right prompt)
     tmux/                                # tmux + pinned gpakosz/.tmux + tmux.conf.local
     direnv.nix                           # direnv + nix-direnv
+    fzf.nix                              # fzf + zsh integration (Ctrl+R history, Ctrl+T files, Alt+C cd)
   development/
     git.nix                              # git + gh + delta (SSH signing on by default)
     neovim/                              # neovim + LazyVim (lazy.nvim dev path → Nix-pinned plugins, treesitter parsers prebuilt, no mason)
