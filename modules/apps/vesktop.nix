@@ -1,10 +1,10 @@
 { pkgs, ... }:
 {
-  environment.systemPackages = [ pkgs.discord ];
+  environment.systemPackages = [ pkgs.vesktop ];
 
   lansing.desktop.niri.appWindowRules = [
     {
-      match.app-id = "^discord$";
+      match.app-id = "^vesktop$";
       openOnWorkspace = "communication";
     }
   ];

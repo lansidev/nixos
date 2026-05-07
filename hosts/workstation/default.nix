@@ -17,7 +17,7 @@
     ../../modules/desktop/laptop.nix
     ../../modules/apps/firefox.nix
     ../../modules/apps/onepassword.nix
-    ../../modules/apps/discord.nix
+    ../../modules/apps/vesktop.nix
     ../../modules/apps/signal.nix
     ../../modules/apps/spotify.nix
     ../../modules/apps/slack.nix
@@ -42,7 +42,7 @@
     }
   '';
 
-  # Pin the comms workspace to the laptop panel so Slack/Discord
+  # Pin the comms workspace to the laptop panel so Slack/Vesktop
   # always land there even when an external monitor is plugged in.
   lansing.desktop.niri.workspaceOutputs = {
     communication = "eDP-1";
