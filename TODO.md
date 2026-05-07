@@ -10,5 +10,5 @@
 - [x] Readd Mod+D besides Mod+Space to open app launcher
 - [x] Use Noctalia Login screen alternative
 - [x] Add own workspace "gaming" for Steam
-- [ ] VSCode Terminal shows square icon instead of a NixOS Flake symbol
+- [x] VSCode Terminal shows square icon instead of a NixOS Flake symbol
 - [ ] Wire up the Elgato Cam Link 4K (USB HDMI capture) so it shows up as a v4l2 source for video calls / OBS
