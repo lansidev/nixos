@@ -87,7 +87,7 @@ home/lansing/
     tmux/                                  # tmux + pinned gpakosz/.tmux + tmux.conf.local
     direnv.nix                             # direnv + nix-direnv
   development/
-    claude-code.nix                        # ~/.claude/settings.json (model, perms, attribution off)
+    claude-code.nix                        # ~/.claude/settings.json (model, perms, attribution off, tmux session-state hooks)
     git.nix                                # git + gh + delta (SSH signing on by default)
     neovim/                                # neovim + LazyVim (lazy.nvim dev path → Nix-pinned plugins, treesitter parsers prebuilt, no mason)
     kubernetes/                            # kubectl, k9s, fluxcd + k9s skin
