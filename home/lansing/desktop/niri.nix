@@ -1,4 +1,4 @@
-{ lib, osConfig, ... }:
+{ config, lib, osConfig, ... }:
 let
   keys =
     if osConfig.lansing.desktop.keyboardLayout == "iso" then {
@@ -63,6 +63,8 @@ in
       "@OUTPUTS@"
       "@WORKSPACES@"
       "@APP_WINDOW_RULES@"
+      "@CURSOR_THEME@"
+      "@CURSOR_SIZE@"
     ]
     [
       keys.help
@@ -75,6 +77,8 @@ in
       osConfig.lansing.desktop.niriOutputs
       workspacesKdl
       appWindowRulesKdl
+      config.home.pointerCursor.name
+      (toString config.home.pointerCursor.size)
     ]
     (builtins.readFile ./niri.kdl);
 }

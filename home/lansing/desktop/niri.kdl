@@ -275,6 +275,16 @@ layout {
     }
 }
 
+// Cursor theme + size. Niri also exports these as XCURSOR_THEME / XCURSOR_SIZE
+// to every child it spawns, so unsetting this block leaves children with
+// niri's defaults ("default" / 24) regardless of what home.pointerCursor
+// writes into the user systemd environment. Values are templated from
+// home.pointerCursor by home/lansing/desktop/niri.nix.
+cursor {
+    xcursor-theme "@CURSOR_THEME@"
+    xcursor-size @CURSOR_SIZE@
+}
+
 // Environment variables exported into every child niri spawns. Scoped to
 // the niri session — keep DISPLAY out of system-wide environment.sessionVariables
 // or greetd's cage compositor will pick it up at boot, try the wlroots X11
