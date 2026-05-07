@@ -23,6 +23,22 @@
     ];
   };
 
+  # Passwordless `sudo nixos-rebuild` for the primary user. Keeps password
+  # prompts on every other sudo invocation — only the rebuild path is
+  # whitelisted, so a compromised shell still can't escalate to arbitrary
+  # root commands.
+  security.sudo.extraRules = [
+    {
+      users = [ "lansing" ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/nixos-rebuild";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # NixOS regenerates /etc/passwd from the declarative spec on every
   # rebuild, so a manual `chfn` would get clobbered (see
   # nixos/modules/config/update-users-groups.pl: `description` is taken
