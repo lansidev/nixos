@@ -29,6 +29,7 @@ in
       "git.autofetch" = true;
       "editor.fontFamily" = "'JetBrainsMono Nerd Font', monospace";
       "terminal.integrated.fontFamily" = "JetBrainsMono Nerd Font";
+      "workbench.colorTheme" = "Catppuccin Mocha";
     };
 
     # `pkgs.vscode-marketplace` is provided by the
