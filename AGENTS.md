@@ -89,7 +89,7 @@ home/lansing/
   development/
     claude-code.nix                        # ~/.claude/settings.json (model, perms, attribution off)
     git.nix                                # git + gh + delta (SSH signing on by default)
-    neovim.nix                             # neovim + dracula + nerdtree/coc/startify/snippets
+    neovim/                                # neovim + LazyVim (lazy.nvim dev path → Nix-pinned plugins, treesitter parsers prebuilt, no mason)
     kubernetes/                            # kubectl, k9s, fluxcd + k9s skin
     golang.nix                             # go + gotools
 ```
