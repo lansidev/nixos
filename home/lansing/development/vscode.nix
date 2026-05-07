@@ -54,6 +54,7 @@ in
       adamhartford.vscode-base64
       jnoortheen.nix-ide
       kdl-org.kdl
+      catppuccin.catppuccin-vsc
     ];
   };
 }
