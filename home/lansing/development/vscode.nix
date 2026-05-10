@@ -30,6 +30,8 @@ in
       "editor.fontFamily" = "'JetBrainsMono Nerd Font', monospace";
       "terminal.integrated.fontFamily" = "JetBrainsMono Nerd Font";
       "workbench.colorTheme" = "Catppuccin Mocha";
+      "workbench.secondarySideBar.defaultVisibility" = "hidden";
+      "claudeCode.preferredLocation" = "panel";
     };
 
     # `pkgs.vscode-marketplace` is provided by the
