@@ -30,10 +30,13 @@
           { id = "Launcher"; }
           {
             id = "Clock";
-            # Qt date/time format (case-sensitive): yyyy = 4-digit year,
-            # MM = 2-digit month, dd = 2-digit day, HH = 24h hour,
-            # mm = minute, ss = second.
-            formatHorizontal = "yyyy-MM-dd HH:mm:ss";
+            # Qt date/time format (case-sensitive, lokalisiert):
+            #   ddd  = Wochentag abgekürzt (z.B. "Fr")
+            #   d    = Tag ohne führende Null
+            #   MMMM = Monat ausgeschrieben (z.B. "Mai")
+            #   HH:mm:ss = Stunde:Minute:Sekunde, 24h
+            # Ergibt z.B. "Fr. 8. Mai 15:50:39" (de_DE-Locale vorausgesetzt).
+            formatHorizontal = "ddd. d. MMMM HH:mm:ss";
             tooltipFormat = "yyyy-MM-dd HH:mm:ss";
           }
           { id = "SystemMonitor"; }
