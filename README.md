@@ -203,7 +203,7 @@ modules/
     audio.nix                            # PipeWire + rtkit
     tools.nix                            # mako, wl-clipboard, grim, slurp, ...
   apps/                                  # firefox (+ 1P extension), onepassword (GUI+CLI), discord, signal, spotify, slack (workstation only)
-  gaming/                                # steam (+ 32-bit graphics)
+  gaming/                                # steam (+ 32-bit graphics), lutris (+ umu-launcher → GE-Proton for non-Steam Windows games)
   development/                           # claude-code (unstable), docker
 home/lansing/
   default.nix                            # Home Manager root: identity + imports

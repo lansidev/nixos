@@ -23,6 +23,7 @@
     ../../modules/apps/spotify.nix
     ../../modules/apps/slack.nix
     ../../modules/gaming/steam.nix
+    ../../modules/gaming/lutris.nix
     ../../modules/development/claude-code.nix
     ../../modules/development/docker.nix
     ../../modules/development/vscode.nix
