@@ -385,6 +385,17 @@ tmux_conf_urlscan_options="--compact --dedupe"
 
 # this is the place to override or undo settings
 
+# Pi coding agent: enable CSI-u extended keys so modified keys (ctrl/shift/
+# alt combos) reach the TUI. gpakosz/.tmux only turns `extended-keys` on for
+# terminals it recognises via TERM_PROGRAM/XTERM_VERSION, which misses many
+# CSI-u-capable terminals (kitty, wezterm, ghostty, …) and leaves it off — so
+# the format alone isn't enough, we force `extended-keys on` too. `on` is
+# negotiated (sent only when an app requests it), so it's safe for terminals
+# that don't support it. csi-u is the format Pi expects; the default xterm
+# format makes Pi warn at startup.
+set -g extended-keys on
+set -g extended-keys-format csi-u
+
 # increase history size
 #set -g history-limit 10000
 
