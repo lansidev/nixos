@@ -13,39 +13,64 @@ let
   piSkills = pkgs.fetchFromGitHub {
     owner = "simlans";
     repo = "pi-skills";
-    rev = "04a078621a88be4509c4ca07d02dac901d1d775f";
-    hash = "sha256-cvq4+14YxSE5mfF6N+VG5J/kWK/zHosdB4+rLrjlViw=";
+    rev = "575947b6b37a8ac6e635c72d62161ddc52af325b";
+    hash = "sha256-ZcVITFhkYN7BflKKWALK+eUa+cUZa7McAuhTGkn+oDw=";
   };
 
   piProfileName = "pi-dev";
 
-  # Linux nono profile for `spi`. Adapted from Jannik Volkland's macOS
-  # gist (sipgate Slack, see plan file); same shape, but paths point at
-  # NixOS-native locations and the sops mounts the agent reads from.
+  # Pi extensions, declared **unpinned** on purpose: the `pi-extensions`
+  # oneshot service below runs `pi update --extensions` on login, and without
+  # a version suffix npm resolves each to its latest release — so every login
+  # refreshes to newest (we want current over frozen). This list is the single
+  # source of truth. The three unscoped ones are the recommended essentials
+  # (nicobailon); the four `@fgladisch/...` are Felix Gladisch's extensions.
+  # NB: Felix ships these on **npm**, NOT installable via the old
+  # `git:github.com/.../pi-extensions/packages/<name>` syntax — Pi has no
+  # git-monorepo subpath support (so the `simlans/pi-extensions` fork is not
+  # needed). KEEP IN SYNC with the Mac's ~/.pi/agent/settings.json
+  # (docs/pi-coding-agent-macos.md).
+  piPackages = [
+    "npm:pi-mcp-adapter"
+    "npm:pi-subagents"
+    "npm:pi-web-access"
+    "npm:@fgladisch/pi-bash-approval"
+    "npm:@fgladisch/pi-persistent-history"
+    "npm:@fgladisch/pi-welcome-message"
+    "npm:@fgladisch/pi-user-select"
+  ];
+
+  # nono profile for `spi`: Pi run inside a sandbox. Extends nono's built-in
+  # `node-dev` base (Node.js runtime + the conservative `default` profile that
+  # already denies credentials, keychains, browser data and shell history),
+  # then layers on the Pi/Cortecs specifics. Kept in lockstep with the Mac's
+  # ~/.config/nono/profiles/pi-dev.json (docs/pi-coding-agent-macos.md): same
+  # schema and groups — only the filesystem paths and the linux/macos cache
+  # group differ. Verified valid with `nono profile validate` (current nono
+  # schema: `groups.include` + `network.allow_domain`, not the older
+  # `security.groups` / `proxy_allow`). Re-validate after a rebuild with
+  # `nono profile validate pi-dev`.
   #
-  # `network_profile = "developer"` is a nono preset that allows the
-  # toolchain (npm, pip, etc.) network access; we narrow further via
-  # `proxy_allow` to the LLM endpoints we actually use.
+  # `network_profile = "developer"` is a nono preset covering the toolchain's
+  # endpoints (npm, GitHub, the common LLM APIs incl. Anthropic/OpenAI);
+  # `allow_domain` adds Cortecs on top.
   piNonoProfile = {
+    extends = "node-dev";
     meta.name = piProfileName;
-    interactive = true;
     workdir.access = "readwrite";
 
-    security.groups = [
-      "node_runtime"
+    groups.include = [
+      "git_config"
       "unlink_protection"
+      "user_caches_linux"
     ];
 
-    commands.deny = [
-      "docker"
-      "docker-compose"
-      "podman"
-      "kubectl"
-      "k9s"
-    ];
-
+    # No `commands.deny`: nono deprecated it (startup-only, child processes
+    # bypass it — not real security) and warns on every run. Docker is gated
+    # the real way instead, by denying its socket below.
     filesystem = {
       deny = [ "/var/run/docker.sock" ];
+      # `allow` is read+write in the current schema, so no separate `write`.
       allow = [
         "$HOME/.pi"
         "$HOME/.cache"
@@ -58,22 +83,11 @@ let
         "/run/secrets/git"
         "/nix/store"
       ];
-      write = [
-        "$HOME/.pi"
-        "$HOME/.cache"
-        "$TMPDIR"
-      ];
     };
 
     network = {
       network_profile = "developer";
-      proxy_allow = [
-        "127.0.0.1"
-        "localhost"
-        "api.cortecs.ai"
-        "api.anthropic.com"
-        "api.openai.com"
-      ];
+      allow_domain = [ "api.cortecs.ai" ];
     };
   };
 in
@@ -101,6 +115,10 @@ in
     # /run/current-system/sw/bin via environment.systemPackages, so PATH
     # resolution at exec time picks up whichever version the host has.
     (pkgs.writeShellScriptBin "spi" ''
+      # nono refuses to start if ~/.nono/sessions is group/world-accessible,
+      # which the default umask 022 produces (755). Force 700 before launch.
+      mkdir -p "$HOME/.nono/sessions"
+      chmod 700 "$HOME/.nono" "$HOME/.nono/sessions" 2>/dev/null || true
       exec nono run \
         --allow-cwd \
         --profile ${piProfileName} \
@@ -108,9 +126,13 @@ in
     '')
   ];
 
+  # `packages` is Pi's installed-extension list. On the Mac `pi install`
+  # writes it; here settings.json is a read-only Nix symlink, so we declare
+  # the list directly and let the `pi-extensions` service fetch the code.
   home.file.".pi/agent/settings.json".text = builtins.toJSON {
     transport = "auto";
     enableInstallTelemetry = false;
+    packages = piPackages;
   };
 
   # Cortecs custom provider (OpenAI-compatible). `apiKey: "!…"` is Pi's
@@ -118,10 +140,14 @@ in
   # file, no env-var leak. The cortecs base URL is documented at
   # https://docs.cortecs.ai/.
   #
-  # `models` is a starter list. After bootstrap, run `pi` → Ctrl+L to see
-  # which Cortecs IDs the catalog actually advertises, then edit this
-  # file and `home-manager switch`. Each entry only requires `id`; the
-  # remaining fields are optional overrides.
+  # Cortecs only serves EU-hosted, GDPR-compliant ("sovereign") models, so
+  # this `models` array is effectively the allow-list — only what's listed
+  # shows up under `/model`. Keep it to the European models we want. List the
+  # live catalog with `curl -s https://api.cortecs.ai/v1/models -H "Authorization:
+  # Bearer $(cat <key>)" | jq '.data[].id'`, then edit this file and
+  # `home-manager switch`. Each entry only requires `id`; the rest are
+  # optional overrides. KEEP IN SYNC with the Mac's ~/.pi/agent/models.json
+  # (docs/pi-coding-agent-macos.md) — same model IDs on every machine.
   home.file.".pi/agent/models.json".text = builtins.toJSON {
     providers.cortecs = {
       baseUrl = "https://api.cortecs.ai/v1";
@@ -130,9 +156,9 @@ in
       authHeader = true;
       models = [
         {
-          id = "openai/gpt-5";
-          name = "GPT-5 (Cortecs)";
-          contextWindow = 200000;
+          id = "devstral-2512";
+          name = "Devstral 2 2512 (Cortecs)";
+          contextWindow = 262000;
         }
       ];
     };
@@ -147,4 +173,34 @@ in
   # `nono run --profile pi-dev` (i.e. the spi wrapper) picks it up.
   xdg.configFile."nono/profiles/${piProfileName}.json".text =
     builtins.toJSON piNonoProfile;
+
+  # Fetch the declared extensions automatically. `pi install` can't be used
+  # on NixOS (it writes settings.json, a read-only symlink here), so the list
+  # lives in settings.json above and this oneshot runs `pi update
+  # --extensions` to pull the missing code into the writable ~/.pi/agent/npm.
+  # `--extensions` never touches the read-only pi binary; the run is
+  # idempotent (a no-op once everything is present). `/login` still has to be
+  # done once per host by hand — it's an interactive OAuth flow.
+  systemd.user.services.pi-extensions = {
+    Unit = {
+      Description = "Sync declared Pi coding-agent extensions";
+      # Advisory: user units can't strictly order against the system
+      # network-online.target, but this nudges it later in the sequence.
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      # pi comes from the system module (nixpkgs-unstable) in
+      # /run/current-system/sw/bin; user units have a minimal PATH, so call it
+      # by absolute path.
+      ExecStart = "/run/current-system/sw/bin/pi update --extensions";
+      # Tie the unit to the package list so `home-manager switch` restarts
+      # (and re-syncs) whenever the list changes.
+      Environment =
+        "PI_PACKAGES_HASH=${builtins.hashString "sha256" (builtins.concatStringsSep "," piPackages)}";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 }

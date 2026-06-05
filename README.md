@@ -365,18 +365,18 @@ Once the system boots into Niri, finish the per-user bootstrap:
    (`home/lansing/development/pi-coding-agent.nix`). See
    [`docs/pi-coding-agent.md`](docs/pi-coding-agent.md) for the full
    bootstrap walkthrough (architecture, design decisions, Mac sops
-   access, troubleshooting). Three one-time steps remain after the
-   first rebuild on a host:
+   access, troubleshooting). Running Pi on a Mac (no Nix) instead? See
+   [`docs/pi-coding-agent-macos.md`](docs/pi-coding-agent-macos.md).
+   Three one-time steps remain after the first rebuild on a host:
 
-   1. **Fork the skill + extension repos** to your own GitHub once
-      (`simlans/pi-skills` from `fgladisch/pi-skills`,
-      `simlans/pi-extensions` from `fgladisch/pi-extensions`), then pin
-      `simlans/pi-skills` by editing the placeholder `rev` + `hash` in
+   1. **Fork the skills repo and pin it.** Fork `fgladisch/pi-skills` to
+      `simlans/pi-skills`, then set its `rev` + `hash` in
       `home/lansing/development/pi-coding-agent.nix`:
       ```bash
       nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main
       ```
-      Paste the resulting `rev`/`hash` and rebuild.
+      Paste the resulting `rev`/`hash` and rebuild. (No `pi-extensions` fork
+      is needed — Felix's extensions install from npm; see step 3.)
 
    2. **Seed the Cortecs API key in sops.** Get the key from the Cortecs
       dashboard, then:
@@ -392,23 +392,24 @@ Once the system boots into Niri, finish the per-user bootstrap:
       directive in `~/.pi/agent/models.json` resolves the secret at request
       time, so it never lives in an env var.
 
-   3. **Install the runtime extensions and third-party essentials.** Pi's
-      own package manager owns this state under `~/.pi/`, so it's not in
-      the flake. Run once per host:
-      ```bash
-      pi install npm:pi-mcp-adapter
-      pi install npm:pi-subagents
-      pi install npm:pi-web-access
-      pi install git:github.com/simlans/pi-extensions/packages/pi-bash-approval
-      pi install git:github.com/simlans/pi-extensions/packages/pi-persistent-history
-      pi install git:github.com/simlans/pi-extensions/packages/pi-welcome-message
-      pi install git:github.com/simlans/pi-extensions/packages/pi-user-select
-      ```
+   3. **Log in once per host.** `pi /login` (interactive OAuth) binds your
+      Claude subscription and writes the token to `~/.pi/agent/auth.json`.
+      This is the only manual per-host step — extensions install themselves
+      (see below).
+
+   Extensions are **not** installed by hand on NixOS. The pinned `packages`
+   list lives in `home/lansing/development/pi-coding-agent.nix`'s
+   `settings.json`, and a `pi-extensions` systemd user service runs
+   `pi update --extensions` on login to fetch them into `~/.pi/agent/npm`
+   (`pi install` can't be used — it writes the read-only `settings.json`
+   symlink). Felix Gladisch's extensions are the `@fgladisch/pi-*` **npm**
+   packages; the old `git:.../pi-extensions/packages/<name>` form does not
+   work (Pi has no git-monorepo-subpath support).
 
    Then either `pi` (unsandboxed, full access) or `spi` (sandboxed via
-   nono, recommended) starts the agent. Use `/login` once to bind your
-   Claude subscription; the Cortecs models show up under `/model` (Ctrl+L)
-   automatically once the sops key is present.
+   nono, recommended) starts the agent. The Cortecs Devstral model and your
+   Claude models show up under `/model` (Ctrl+L) once the sops key is present
+   and you've logged in.
 
    First-activation gotcha: if `~/.pi/agent/settings.json` or
    `~/.pi/agent/models.json` already exist as plain files (from a manual

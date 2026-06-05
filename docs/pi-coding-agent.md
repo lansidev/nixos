@@ -6,6 +6,36 @@ it can merge to `main`. README and AGENTS.md cover the steady-state
 behaviour; this file is the **bootstrap** view ("I came back a week later,
 where do I pick up").
 
+Setting Pi up on a Mac (no Nix / no home-manager)? See the companion
+walkthrough: [`pi-coding-agent-macos.md`](pi-coding-agent-macos.md).
+
+## Keep macOS and NixOS in sync
+
+**Rule: the two NixOS hosts and the Mac run the same Pi setup** — same models,
+skills, sandbox rules, and extensions, for an identical coding experience
+everywhere. **Any change here must be mirrored into the macOS setup in the same
+change**, and this doc kept paired with
+[`pi-coding-agent-macos.md`](pi-coding-agent-macos.md). What maps to what:
+
+| Concern | NixOS (this file's module: `home/lansing/development/pi-coding-agent.nix`) | macOS (plain files, see the macOS doc) |
+|---|---|---|
+| models / providers | `home.file.".pi/agent/models.json"` | `~/.pi/agent/models.json` |
+| settings | `home.file.".pi/agent/settings.json"` | `~/.pi/agent/settings.json` |
+| skills pin | `piSkills.rev` / `hash` | `git checkout <rev>` of `simlans/pi-skills` |
+| nono profile | `piNonoProfile` (paths differ per platform) | `~/.config/nono/profiles/pi-dev.json` |
+| `spi` wrapper | `writeShellScriptBin "spi"` | `~/.local/bin/spi` |
+| extensions (unpinned) | `piPackages` → `settings.json` + `pi-extensions` service runs `pi update --extensions` | `pi install npm:…` once, then `pi update` to refresh |
+
+The `nono` profile uses the same schema and the same `extends: node-dev` base
+on both platforms (current nono schema: `groups.include` + `network.allow_domain`).
+Only two things legitimately differ: the Cortecs key source (sops-nix here vs.
+local file / 1Password on the Mac) and the profile's filesystem paths plus cache
+group (NixOS store + `/run/secrets` + docker-sock deny + `user_caches_linux`,
+Landlock; vs. `$HOME/...` + `user_caches_macos`, Seatbelt). Model IDs, skill
+revision, the `node-dev` base, denied commands, and the allowed domain should
+match. Current shared model: Cortecs EU-sovereign only, `devstral-2512`
+(Mistral Devstral 2 2512).
+
 The high-level summary: replace / supplement Claude Code with [Pi Coding
 Agent](https://pi.dev) on both NixOS hosts. Pi is a model-agnostic
 terminal agent that lets us swap models per task, gives us the existing
@@ -40,10 +70,11 @@ What's done in this branch (`add-pi`):
 
 What's still open before merge:
 
-- [ ] Fork `fgladisch/pi-extensions` to `simlans/pi-extensions` on GitHub
-      (only needed at `pi install` time — see "Post-rebuild" below). The
-      skills fork (`simlans/pi-skills`) is already in place; that's
-      where the pinned hash comes from.
+- [x] ~~Fork `fgladisch/pi-extensions`~~ — **not needed.** Felix's
+      extensions install from npm (`@fgladisch/pi-*`); Pi has no
+      git-monorepo-subpath support, so the planned `git:.../packages/<name>`
+      installs never worked. Only the `simlans/pi-skills` fork matters (it's
+      pinned by `rev`/`hash`).
 - [ ] Add the **Cortecs API key** to sops. Requires either editing on a
       host that already has age-decrypt access (battlestation) **or**
       adding the Mac as a third age recipient first (see [Mac sops
@@ -52,25 +83,29 @@ What's still open before merge:
       `…#workstation`) — first activation. Expect to remove any
       pre-existing `~/.pi/agent/{settings,models}.json` plain files
       from a prior manual `pi` run.
-- [ ] Post-rebuild per host: `pi /login`, then `pi install` the runtime
-      extensions and third-party essentials (commands below).
-- [ ] Update the Cortecs `models.json` entry with the actual model IDs
-      the dashboard advertises — the current `openai/gpt-5` placeholder
-      may not exist in the catalog.
+- [x] Extensions automated: pinned `packages` list in `settings.json` +
+      `pi-extensions` systemd user service runs `pi update --extensions`.
+      Post-rebuild per host the only manual step is `pi /login` (interactive
+      OAuth).
+- [x] Cortecs `models.json` set to EU-sovereign `devstral-2512` (Mistral
+      Devstral 2 2512). Add more European IDs from the catalog as desired
+      (`curl …/v1/models`); keep the list identical to the Mac's.
 - [ ] Commit, merge to `main`, remove worktree.
 
 ## Next steps (in order)
 
-### 1. Fork the extension repo
+### 1. Extensions (no fork needed)
 
-```text
-# On GitHub:
-https://github.com/fgladisch/pi-extensions  →  Fork  →  simlans/pi-extensions
-```
+Felix Gladisch's extensions are published to **npm** as `@fgladisch/pi-*`,
+and the three essentials (`pi-mcp-adapter`, `pi-subagents`, `pi-web-access`)
+are npm packages too. They're declared, pinned, in the `piPackages` list in
+`home/lansing/development/pi-coding-agent.nix` and fetched automatically by
+the `pi-extensions` systemd user service — nothing to do here.
 
-The fork only needs to exist; nothing pins to it from Nix. After fork,
-the `pi install git:github.com/simlans/pi-extensions/packages/…` lines
-in the README's post-install step (and below) will resolve.
+The originally-planned `pi install git:github.com/simlans/pi-extensions/packages/<name>`
+approach **does not work**: Pi has no git-monorepo-subpath support, so it
+tries to `git clone …/pi-extensions/packages/<name>` and 404s. The
+`simlans/pi-extensions` fork is therefore unnecessary — ignore or delete it.
 
 ### 2. Get the Cortecs API key into sops
 
@@ -105,30 +140,39 @@ sudo nixos-rebuild switch --flake ~/Projects/nixos-workstation-add-pi#battlestat
 
 ### 4. Per-host post-rebuild bootstrap
 
+The **only** manual step is binding your Claude subscription:
+
 ```bash
-# Bind your Claude subscription (optional but recommended):
 pi
 # inside pi:
 /login
-
-# Third-party essentials (Felix's recommended trio):
-pi install npm:pi-mcp-adapter
-pi install npm:pi-subagents
-pi install npm:pi-web-access
-
-# Felix's extensions, from your fork:
-pi install git:github.com/simlans/pi-extensions/packages/pi-bash-approval
-pi install git:github.com/simlans/pi-extensions/packages/pi-persistent-history
-pi install git:github.com/simlans/pi-extensions/packages/pi-welcome-message
-pi install git:github.com/simlans/pi-extensions/packages/pi-user-select
 ```
 
-### 5. Fix up the Cortecs model list
+Extensions are **not** installed by hand. The `piPackages` list in
+`home/lansing/development/pi-coding-agent.nix` (declared into the read-only
+`settings.json`) is the source of truth, and the `pi-extensions` systemd user
+service runs `pi update --extensions` on login to fetch/refresh them into the
+writable `~/.pi/agent/npm`. The list is **unpinned**, so each login pulls the
+latest release. To force a refresh mid-session:
 
-Run `pi`, hit Ctrl+L to open the model selector, observe which Cortecs
-IDs the catalog actually advertises. Then edit
+```bash
+systemctl --user restart pi-extensions   # or: pi update --extensions
+```
+
+(`pi install` can't be used on NixOS — it writes `settings.json`, which is a
+read-only Nix symlink. And Felix's extensions are npm packages
+`@fgladisch/pi-*`, not git-monorepo subpaths — see step 1.)
+
+### 5. Cortecs model list
+
+Cortecs serves EU-sovereign models only, and the `models` array is the
+allow-list. It's set to `devstral-2512` (Mistral Devstral 2 2512). To add
+more European models, list the catalog (`curl -s https://api.cortecs.ai/v1/models
+-H "Authorization: Bearer $(cat /run/secrets/pi/cortecs_api_key)" | jq '.data[].id'`
+or `pi` → Ctrl+L), then edit
 `home/lansing/development/pi-coding-agent.nix`'s `models` array and
-`home-manager switch` (or `nixos-rebuild switch`).
+`home-manager switch` (or `nixos-rebuild switch`). **Mirror the same IDs in
+the Mac's `~/.pi/agent/models.json`** (see the macOS doc).
 
 ### 6. Merge
 
@@ -164,9 +208,10 @@ git branch -d add-pi
                               │
                               ▼
 ┌─ runtime / mutable state (NOT managed by Nix) ──────────────────────┐
-│  ~/.pi/agent/extensions/<name>/         ← `pi install …`            │
+│  ~/.pi/agent/npm/                        ← extension code (npm dir) │
 │  ~/.pi/agent/sessions/                   ← per-cwd JSONL sessions   │
 │  ~/.pi/agent/packages/                   ← pi-package-manager cache │
+│  ~/.pi/agent/auth.json                   ← pi /login OAuth token    │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -208,9 +253,9 @@ happens directly on the host that has age access, see step 2.
 | Splitting `nono` and `pi-coding-agent` into separate files | Yes | AGENTS.md "one tool per file" rule. |
 | System vs. user scope | System = binary only; user = settings + skills + sandbox profile + `spi` wrapper | Mirrors the `claude-code` split. |
 | Skills | Declarative `fetchFromGitHub simlans/pi-skills`, pinned by rev/hash | Reproducible, follows the `oh-my-tmux` pattern in `home/lansing/shell/tmux/default.nix`. |
-| Extensions | Runtime via `pi install git:github.com/simlans/pi-extensions/packages/<name>` | Pi's package manager owns the state; replicating it in Nix would mean rebuilding TypeScript at eval time. |
-| Third-party essentials (`pi-mcp-adapter`, `pi-subagents`, `pi-web-access`) | Runtime via `pi install npm:<name>` | Same reasoning; npm names, not under fgladisch's scope. |
+| Extensions (essentials + Felix's) | Declared **unpinned** in `settings.json`'s `packages` (npm refs incl. `@fgladisch/pi-*`); the `pi-extensions` systemd user service runs `pi update --extensions` on login to fetch them into `~/.pi/agent/npm` | `pi install` can't run on NixOS (it writes the read-only `settings.json` symlink); declaring the list + a oneshot reconciler keeps it hands-off. Unpinned = newest on each login. Felix ships on npm — Pi has no git-monorepo-subpath support, so `git:.../packages/<name>` never worked. |
 | Cortecs API key | sops secret `pi/cortecs_api_key`, read via `apiKey: "!cat /run/secrets/pi/cortecs_api_key"` | No env-var leak; resolves per request. |
+| Claude subscription auth | Built-in Anthropic provider; `pi /login` writes the OAuth token to `~/.pi/agent/auth.json` (per-host, mutable, **not** Nix-managed) | Anthropic is built-in, so it needs **no** `models.json` entry — `models.json` is only for custom providers (Cortecs). Only the token differs per machine, like sessions, so it stays out of the flake. Run `pi /login` once per host. |
 | `spi` wrapper binary lookup | Bare names (`exec nono run … -- pi "$@"`), **not** `${pkgs.nono}/bin/nono` | `pi-coding-agent` and `nono` live in `nixpkgs-unstable` only; the home-manager `pkgs` is stable. Bare names resolve through `/run/current-system/sw/bin` at exec time and pick up whatever the system module installed. |
 | Sandbox profile location | `~/.config/nono/profiles/pi-dev.json` via `xdg.configFile` | Matches nono's discovery path; matches Jannik Volkland's macOS pattern. |
 | Documentation | README + AGENTS + this doc updated in the same change | Hard rule in AGENTS.md "Documentation upkeep". |
@@ -348,7 +393,7 @@ Upstream repos:
 - [fgladisch/pi-skills](https://github.com/fgladisch/pi-skills) — Felix's skill library (Superpowers port + custom)
 - [fgladisch/pi-extensions](https://github.com/fgladisch/pi-extensions) — Felix's extension monorepo
 - [simlans/pi-skills](https://github.com/simlans/pi-skills) — our fork, pinned by `rev`/`hash` in `home/lansing/development/pi-coding-agent.nix`
-- [simlans/pi-extensions](https://github.com/simlans/pi-extensions) — our fork, consumed by `pi install git:…` at runtime (not Nix-pinned)
+- [simlans/pi-extensions](https://github.com/simlans/pi-extensions) — our fork; **unused**. Pi can't install git-monorepo subpaths, and Felix publishes to npm; install `@fgladisch/pi-*` from npm instead.
 
 Third-party essentials (recommended in Felix's update):
 
