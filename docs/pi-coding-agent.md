@@ -124,7 +124,7 @@ Two paths depending on where you're working:
 **On battlestation** (already has the `user_lansing` age key):
 
 ```bash
-cd ~/Projects/nixos-workstation                 # or wherever the worktree lives
+cd ~/Projects/nixos                 # or wherever the worktree lives
 sops secrets/personal.yaml
 # add at the top level, alongside existing `git:` and `sunshine:` blocks:
 #   pi:
@@ -141,9 +141,9 @@ sops secrets/personal.yaml
 rm -f ~/.pi/agent/settings.json ~/.pi/agent/models.json
 
 # On battlestation:
-sudo nixos-rebuild test --flake ~/Projects/nixos-workstation-add-pi#battlestation
+sudo nixos-rebuild test --flake ~/Projects/nixos-add-pi#battlestation
 # verify, then switch:
-sudo nixos-rebuild switch --flake ~/Projects/nixos-workstation-add-pi#battlestation
+sudo nixos-rebuild switch --flake ~/Projects/nixos-add-pi#battlestation
 
 # Same on workstation (laptop).
 ```
@@ -187,13 +187,13 @@ the Mac's `~/.pi/agent/models.json`** (see the macOS doc).
 ### 6. Merge
 
 ```bash
-cd ~/Documents/projects/nixos-workstation
-git -C ../nixos-workstation-add-pi commit -am "development: add pi coding agent + cortecs + nono sandbox"
-git -C ../nixos-workstation-add-pi push -u origin add-pi
+cd ~/Documents/projects/nixos
+git -C ../nixos-add-pi commit -am "development: add pi coding agent + cortecs + nono sandbox"
+git -C ../nixos-add-pi push -u origin add-pi
 # either PR + squash on GitHub, or local merge:
 git merge --no-ff add-pi
 git push
-git worktree remove ../nixos-workstation-add-pi
+git worktree remove ../nixos-add-pi
 git branch -d add-pi
 ```
 
@@ -307,14 +307,14 @@ age-keygen -y ~/.config/sops/age/keys.txt   # prints the public key (age1…)
 
 # 4. On a machine that already has decrypt access (battlestation),
 #    re-encrypt against the expanded recipient set:
-cd ~/Projects/nixos-workstation
+cd ~/Projects/nixos
 git pull
 sops updatekeys secrets/personal.yaml
 git commit -am "sops: add mac as recipient"
 git push
 
 # 5. Mac can now edit:
-cd ~/Documents/projects/nixos-workstation
+cd ~/Documents/projects/nixos
 git pull
 sops secrets/personal.yaml
 ```

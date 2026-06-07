@@ -373,7 +373,7 @@ pi
 # unpinned so you always get the latest release:
 pi install npm:pi-mcp-adapter
 pi install npm:pi-subagents
-pi install npm:pi-web-access
+pi install  
 pi install npm:@fgladisch/pi-persistent-history
 pi install npm:@fgladisch/pi-user-select
 ```

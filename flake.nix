@@ -176,7 +176,7 @@
               name="$2"
 
               repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-                echo "ERROR: not in a git repo (run from inside nixos-workstation/)" >&2
+                echo "ERROR: not in a git repo (run from inside nixos/)" >&2
                 exit 1
               }
               cd "$repo_root"
@@ -222,7 +222,7 @@
 
               Then on $name:
                 git pull
-                sudo nixos-rebuild switch --flake ~/Projects/nixos-workstation#$name
+                sudo nixos-rebuild switch --flake ~/Projects/nixos#$name
               EOF
             '';
           }}/bin/sops-onboard-host";

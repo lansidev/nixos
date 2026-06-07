@@ -1,4 +1,4 @@
-# nixos-workstation
+# nixos
 
 Declarative NixOS configuration for two of simlans's machines:
 
@@ -59,7 +59,7 @@ lsusb
 sudo NIX_CONFIG="experimental-features = nix-command flakes
 tarball-ttl = 0" nix --refresh run \
   github:nix-community/disko/latest#disko-install -- \
-  --flake github:simlans/nixos-workstation#<host> \
+  --flake github:simlans/nixos#<host> \
   --disk main /dev/nvme0n1 \
   --write-efi-boot-entries
 # → prompts only for the LUKS passphrase. disko-install runs
@@ -76,7 +76,7 @@ tarball-ttl = 0" nix --refresh run \
 # git. The new system stays mounted at /mnt after disko-install exits,
 # which is why this runs before reboot.
 NIX_CONFIG="experimental-features = nix-command flakes" \
-  nix run github:simlans/nixos-workstation#init-account
+  nix run github:simlans/nixos#init-account
 ```
 
 `reboot`, pull the USB, type the LUKS passphrase → `ReGreet` (the GTK
@@ -129,8 +129,8 @@ Boot into Windows via the BIOS boot picker (F11) once. With BitLocker active, ex
 ## Subsequent rebuilds
 
 ```bash
-git clone https://github.com/simlans/nixos-workstation ~/nixos-workstation
-sudo nixos-rebuild switch --flake ~/nixos-workstation#<host>
+git clone https://github.com/simlans/nixos ~/nixos
+sudo nixos-rebuild switch --flake ~/nixos#<host>
 ```
 
 After cloning, run `direnv allow` in the repo root once. That triggers the
@@ -152,7 +152,7 @@ via `usermod` on the next switch:
 
 ```bash
 sudoedit /etc/nixos/local/full-name
-sudo nixos-rebuild switch --flake ~/nixos-workstation#<host>
+sudo nixos-rebuild switch --flake ~/nixos#<host>
 ```
 
 ### Editing secrets
@@ -280,11 +280,11 @@ Once the system boots into Niri, finish the per-user bootstrap:
    output spells out:
 
    ```bash
-   git -C ~/Projects/nixos-workstation commit -am "sops: onboard <flake-host>"
-   git -C ~/Projects/nixos-workstation push
+   git -C ~/Projects/nixos commit -am "sops: onboard <flake-host>"
+   git -C ~/Projects/nixos push
    ssh lansing@<ssh-target>
-     git -C ~/Projects/nixos-workstation pull
-     sudo nixos-rebuild switch --flake ~/Projects/nixos-workstation#<flake-host>
+     git -C ~/Projects/nixos pull
+     sudo nixos-rebuild switch --flake ~/Projects/nixos#<flake-host>
    ```
 
    After the rebuild, `/run/secrets/git/{author_name,author_email,github_user}`
@@ -329,7 +329,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
       ```
       Commit + push, then on battlestation:
       ```bash
-      sudo nixos-rebuild switch --flake ~/Projects/nixos-workstation#battlestation
+      sudo nixos-rebuild switch --flake ~/Projects/nixos#battlestation
       ```
       The user unit's `ExecStartPre` calls `sunshine --creds` on every
       start to keep `~/.config/sunshine/sunshine_state.json` in sync with
@@ -521,7 +521,7 @@ If something needs editing before install (e.g. `disko/<host>.nix`):
 
 ```bash
 nix-shell -p git
-git clone https://github.com/simlans/nixos-workstation /tmp/cfg
+git clone https://github.com/simlans/nixos /tmp/cfg
 cd /tmp/cfg
 # … edit …
 sudo NIX_CONFIG="experimental-features = nix-command flakes" nix run \
