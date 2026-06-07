@@ -36,6 +36,16 @@ revision, the `node-dev` base, denied commands, and the allowed domain should
 match. Current shared model: Cortecs EU-sovereign only, `devstral-2512`
 (Mistral Devstral 2 2512).
 
+One filesystem path is **macOS-only on purpose**: the Mac's profile adds a
+`$HOME/Documents/projects/.gitconfig` read because `~/Documents/projects/.envrc`
+(direnv) exports `GIT_CONFIG_GLOBAL` pointing git at that parent-directory
+gitconfig, and the env var is inherited into the sandbox. NixOS has no such
+redirect — git there reads `~/.gitconfig` (a `/nix/store` symlink, covered by
+the `/nix/store` read + `git_config` group) and `~/.config/git` (already in the
+read list), with identity coming from `~/.envrc` env vars (sops). So the NixOS
+profile needs **no** equivalent read path; don't add one to keep the profiles
+"in sync" — this asymmetry is intentional.
+
 The high-level summary: replace / supplement Claude Code with [Pi Coding
 Agent](https://pi.dev) on both NixOS hosts. Pi is a model-agnostic
 terminal agent that lets us swap models per task, gives us the existing
@@ -370,6 +380,30 @@ spi -p 'cat /etc/shadow'            # MUST be denied by the nono sandbox
   `~/.config/nono/profiles/pi-dev.json`. If the file isn't there,
   `home-manager switch` didn't complete; check for a conflicting
   real file at that path.
+- **`git` under `spi` fails with `unable to access '…/.gitconfig':
+  Operation not permitted`**: this only bites if something sets
+  `GIT_CONFIG_GLOBAL` (or a `gitdir:` `includeIf`) to a path **outside** the
+  sandbox's read scope — e.g. a per-tree `.envrc` like the Mac's. The default
+  NixOS setup doesn't, so it shouldn't occur here. If you introduce such a
+  redirect, add the target file to `piNonoProfile.filesystem.read` in
+  `home/lansing/development/pi-coding-agent.nix` (the Mac fixes the identical
+  case with a `$HOME/Documents/projects/.gitconfig` read entry — see the macOS
+  doc).
+- **`git push` / `gh` under `spi` fails**: **expected, by design — the
+  sandboxed agent has no push credentials.** `gh`'s config dir
+  (`~/.config/gh`) is outside the Landlock read scope, and SSH is blocked by
+  the network layer (the proxy isn't SSH-aware), so the `gh auth
+  git-credential` helper (set in `home/lansing/development/git.nix`) can't
+  authenticate and `git@github.com:` remotes don't connect. **Workflow: the agent edits and `git commit`s under
+  `spi`; you `git push` from a normal shell or plain `pi`.** Keep remotes on
+  HTTPS. We deliberately don't grant the sandbox a token (same posture as the
+  Mac — see the macOS doc's "No `git push` / `gh` auth" note). A
+  `url."https://github.com/".insteadOf` rewrite in
+  `home/lansing/development/git.nix` (rendered into `~/.config/git/config`)
+  auto-converts any `git@github.com:` / `ssh://git@github.com/` remote the agent
+  sets back to HTTPS, so it can't strand the remote on the blocked SSH transport.
+  If you ever want autonomous pushes, inject a scoped `GH_TOKEN` rather than
+  opening `~/.config/gh` or the secret store.
 - **Cortecs model selector empty**: the `models` array in `models.json`
   is empty / contains only IDs the catalog rejects. Use `Ctrl+L` to see
   the live filter, edit `models.json` accordingly.

@@ -247,7 +247,7 @@ nono profile init pi-dev --extends node-dev
   },
   "filesystem": {
     "allow": ["$HOME/.pi", "$HOME/.cache", "$TMPDIR"],
-    "read":  ["$HOME/.agents", "$HOME/.config/git"]
+    "read":  ["$HOME/.agents", "$HOME/.config/git", "$HOME/Documents/projects/.gitconfig"]
   },
   "network": {
     "network_profile": "developer",
@@ -268,6 +268,43 @@ Notes:
 - This profile is verified against nono 0.61.x (`validate` → valid, `show`
   resolves 22 security groups). `filesystem.allow` is read+write in the current
   schema, so the three rw paths need no separate `write` list.
+- `$HOME/Documents/projects/.gitconfig` in the **read** list is macOS-only and
+  exists because `~/Documents/projects/.envrc` (direnv, auto-loaded for every
+  subdirectory) exports `GIT_CONFIG_GLOBAL="$HOME/Documents/projects/.gitconfig"`.
+  That env var is inherited into the sandbox, so any `git` invocation under `spi`
+  reads the *parent-directory* gitconfig as its global config. Without this read
+  path git fails with `fatal: unable to access
+  '…/projects/.gitconfig': Operation not permitted`. It's a single read-only
+  file (identity, signing key, `gpgsign`), so granting read is least-privilege.
+  Confirm it resolved with `nono profile show pi-dev | grep gitconfig` and that
+  git works with `nono run --allow-cwd --profile pi-dev -- git config --get user.email`.
+  (Signed *commits* additionally need the 1Password SSH agent + `op-ssh-sign`,
+  which the sandbox doesn't grant — run those under plain `pi`, or extend the
+  profile separately. Reading the config for `git status`/`log` works as-is.)
+- **No `git push` / `gh` auth from inside `spi` — by design.** The `node-dev`
+  base inherits nono's `default` deny on credentials and the macOS **Keychain**,
+  which is exactly where both git's `osxkeychain` helper
+  (`/opt/homebrew/etc/gitconfig`) and `gh` keep the GitHub token (`gh`'s
+  `hosts.yml` stores it as `keyring`, not in the file). So HTTPS pushes can't
+  retrieve the token, and switching the remote to SSH doesn't help either —
+  nono's network proxy isn't SSH-aware, so `git@github.com:` is blocked
+  outright. **Intended workflow: let the agent edit and `git commit` under
+  `spi`, then `git push` from a normal shell or plain `pi`** (full Keychain
+  access). Keep remotes on **HTTPS** (`https://github.com/...`) and don't let
+  the agent rewrite them to `git@github.com:`. We deliberately do **not** inject
+  a token into the sandbox (the alternative — a scoped PAT via `GH_TOKEN` from
+  1Password at `spi` launch — was considered and rejected to keep zero push
+  credentials in the sandbox).
+- **Guard against SSH-rewrites.** Because a coding agent tends to "fix" a
+  failing push by switching `origin` to `git@github.com:`, `~/Documents/projects/
+  .gitconfig` carries a `[url "https://github.com/"]` block with
+  `insteadOf = git@github.com:` and `insteadOf = ssh://git@github.com/`. Git
+  then resolves any GitHub SSH URL back to HTTPS, so the agent can't strand the
+  remote on the proxy-blocked SSH transport. It's the `GIT_CONFIG_GLOBAL` file,
+  so it's read inside the sandbox too. NixOS mirrors this in
+  `home/lansing/development/git.nix` (`programs.git.settings.url`), rendered into
+  `~/.config/git/config`. Verify with `git ls-remote --get-url
+  git@github.com:owner/repo.git` → it prints the `https://` form.
 - `network_profile: "developer"` already covers the LLM/package/GitHub
   endpoints (Anthropic and OpenAI included); `allow_domain` adds Cortecs on top.
   On macOS nono enforces this via a localhost proxy — it applies to proxy-aware
@@ -280,12 +317,14 @@ Notes:
   anyway, so there's nothing to add here.
 - **In sync with NixOS:** the repo's Linux profile (`piNonoProfile` in
   `home/lansing/development/pi-coding-agent.nix`) uses the **same** schema and
-  the same `extends: node-dev` base, validated identically. Only two things
-  differ by necessity: the filesystem paths (the NixOS side adds
+  the same `extends: node-dev` base, validated identically. Only the filesystem
+  paths and the cache group differ by necessity: the NixOS side adds
   `/run/secrets/{pi,git}` + `/nix/store` reads and the `/var/run/docker.sock`
-  deny) and the cache group (`user_caches_macos` here vs. `user_caches_linux`
-  there). Everything else — base, groups, allowed domain — matches. Change one
-  side, change the other.
+  deny and uses `user_caches_linux`; this Mac uses `user_caches_macos` and adds
+  the `$HOME/Documents/projects/.gitconfig` read (macOS-only, see the bullet
+  above — NixOS has no `GIT_CONFIG_GLOBAL` parent-config redirect, so it needs
+  no equivalent). Everything else — base, groups, allowed domain — matches.
+  Change one side, change the other.
 
 ## 8. Add the `spi` wrapper
 
@@ -335,9 +374,7 @@ pi
 pi install npm:pi-mcp-adapter
 pi install npm:pi-subagents
 pi install npm:pi-web-access
-pi install npm:@fgladisch/pi-bash-approval
 pi install npm:@fgladisch/pi-persistent-history
-pi install npm:@fgladisch/pi-welcome-message
 pi install npm:@fgladisch/pi-user-select
 ```
 
@@ -432,6 +469,25 @@ spi -p 'cat /etc/passwd'                # runs, but writes outside the cwd/allow
   confirm `api.cortecs.ai` is in `network.allow_domain` and visible in
   `nono profile show pi-dev`. Test the same command under plain `pi` to
   confirm it's a sandbox issue and not a key/model issue.
+- **`git` under `spi` fails with `unable to access
+  '…/Documents/projects/.gitconfig': Operation not permitted`** — `~/Documents/
+  projects/.envrc` sets `GIT_CONFIG_GLOBAL` to that parent-directory gitconfig
+  and the env var is inherited into the sandbox, but the file is outside the
+  allowed read paths. Add `$HOME/Documents/projects/.gitconfig` to
+  `filesystem.read` (Step 7), then `nono profile validate
+  ~/.config/nono/profiles/pi-dev.json` and re-run. NixOS doesn't hit this — it
+  has no such `GIT_CONFIG_GLOBAL` redirect.
+- **`git push` / `gh` under `spi` fails** (`Please make sure you have the
+  correct access rights`, `gh ... operation not permitted`, `could not lock
+  config file`) — **expected, not a bug.** The sandbox denies Keychain access,
+  so neither git's `osxkeychain` helper nor `gh` can reach the GitHub token, and
+  SSH is proxy-blocked. Don't switch the remote to SSH and don't try to write
+  global git config from inside the sandbox. Commit under `spi`, then **push
+  from a normal shell or plain `pi`.** A GitHub SSH remote the agent may have
+  set is auto-rewritten to HTTPS by the `[url].insteadOf` guard (Step 7), so it
+  no longer strands the remote on the blocked SSH transport — tidy it up anyway
+  with `git remote set-url origin https://github.com/<owner>/<repo>.git` if you
+  like. See the "No `git push` / `gh` auth" note in Step 7 for the rationale.
 
 ## References
 

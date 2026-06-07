@@ -46,6 +46,19 @@ in
       diff.colorMoved = "default";
 
       credential.helper = "${pkgs.gh}/bin/gh auth git-credential";
+
+      # Force GitHub SSH remotes to HTTPS. The nono sandbox (`spi`) blocks SSH
+      # (its network proxy isn't SSH-aware), and a coding agent will sometimes
+      # try to "fix" a failing push by switching origin to `git@github.com:`.
+      # This rewrite makes that a no-op — the URL resolves back to HTTPS, which
+      # goes through the `gh` credential helper above (outside the sandbox; the
+      # agent itself still can't push, by design — see docs/pi-coding-agent.md).
+      # Lands in ~/.config/git/config, which is in the sandbox read scope.
+      # Mirrors the Mac's ~/Documents/projects/.gitconfig `[url]` block.
+      url."https://github.com/".insteadOf = [
+        "git@github.com:"
+        "ssh://git@github.com/"
+      ];
     };
   };
 

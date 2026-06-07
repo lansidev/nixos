@@ -34,9 +34,7 @@ let
     "npm:pi-mcp-adapter"
     "npm:pi-subagents"
     "npm:pi-web-access"
-    "npm:@fgladisch/pi-bash-approval"
     "npm:@fgladisch/pi-persistent-history"
-    "npm:@fgladisch/pi-welcome-message"
     "npm:@fgladisch/pi-user-select"
   ];
 
