@@ -30,6 +30,8 @@ What lives where:
 | nono profile | `~/.config/nono/profiles/pi-dev.json` | `piNonoProfile` (paths differ per platform) |
 | `spi` wrapper | `~/.local/bin/spi` | `writeShellScriptBin "spi"` |
 | extensions (unpinned) | `pi install npm:…` once, `pi update` to refresh | `piPackages` → `settings.json` + `pi-extensions` service |
+| subagent models | `subagents.agentOverrides` in `settings.json` | same block in `home.file.".pi/agent/settings.json"` |
+| rpiv-i18n locale | `~/.config/rpiv-i18n/locale.json` | `xdg.configFile."rpiv-i18n/locale.json"` |
 
 Two things genuinely *can't* be byte-identical and that's expected: the Cortecs
 key source (local file / 1Password on the Mac vs. sops-nix on NixOS) and the
@@ -46,7 +48,7 @@ revision, denied commands, allowed domains, extension list — should match.
 | `~/.pi/agent/settings.json` | home-manager symlink (read-only) | a plain file you write (**mutable**) |
 | `~/.pi/agent/models.json` (Cortecs provider) | home-manager symlink | a plain file you write |
 | Cortecs API key | sops-nix → `/run/secrets/pi/cortecs_api_key`, read via `!cat …` | a local `chmod 600` file (or 1Password), read via `!cat …` |
-| Skills | `fetchFromGitHub simlans/pi-skills`, pinned by `rev`/`hash` | `git clone` of the same fork at the same rev |
+| Skills | `fetchFromGitHub simlans/pi-skills`, pinned by `rev`/`hash` | `git clone` of the same repo at the same rev |
 | `nono` profile (`pi-dev`) | `xdg.configFile` → `~/.config/nono/profiles/pi-dev.json` | scaffolded with `nono profile init`, written to the same path |
 | `spi` wrapper | `writeShellScriptBin` on `PATH` | a small shell script on your `PATH` |
 | Extensions (`pi install …`) | runtime, not in Nix | **identical** — runtime, same commands |
@@ -67,8 +69,9 @@ Two real differences to keep in mind on macOS:
 ## Prerequisites
 
 - [Homebrew](https://brew.sh) installed.
-- The `simlans/pi-skills` fork exists (you've done this) — it's the only fork
-  that matters; it's pinned by `rev`/`hash` and consumed at build time. The
+- The `simlans/pi-skills` repo exists (you've done this) — our own skills repo
+  (just a `commit` skill, not a fork of Felix's `pi-skills`); it's pinned by
+  `rev`/`hash` and consumed at build time. The
   `simlans/pi-extensions` fork turned out **not** to be needed (Felix's
   extensions install from npm, see Step 9), so you can ignore or delete it.
 - Your Cortecs API key from <https://cortecs.ai> (optional — only needed for
@@ -120,7 +123,10 @@ cat > ~/.pi/agent/settings.json <<'JSON'
 JSON
 ```
 
-This is byte-for-byte what the flake renders on the NixOS hosts.
+This is the minimal starting point. The `defaultProvider` / `defaultModel` /
+`defaultThinkingLevel` keys (set by the in-app model pick in Step 9) and the
+`subagents.agentOverrides` block (Step 10) bring it to parity with what the
+flake renders on the NixOS hosts.
 
 ## 4. Provide the Cortecs API key
 
@@ -151,8 +157,13 @@ Cortecs only serves EU-hosted, GDPR-compliant ("sovereign") models, so the
 catalog is a curated subset — not every model you'd find elsewhere exists
 here. The `models` array below is effectively your **allow-list**: only the
 IDs you list show up under `/model`, so keep it to the European models you
-actually want. We start with Mistral's coding model, **Devstral 2 2512**
-(`devstral-2512`, 262K context):
+actually want. The main agent model is Z.ai's **GLM-4.6** (`glm-4.6`) — cheaper
+than Devstral on both axes and far steadier in agentic tool-loops; **Devstral 2
+2512** (`devstral-2512`) stays selectable for comparison. The rest of the array
+is the open-weight Qwen3/DeepSeek fleet the subagents are pinned to (Step 10) —
+every model a `subagents.agentOverrides` entry references must be listed here or
+it won't resolve. Reproduce the full list from the nix file
+(`home/lansing/development/pi-coding-agent.nix`) so the Mac matches the hosts:
 
 ```bash
 cat > ~/.pi/agent/models.json <<'JSON'
@@ -164,11 +175,13 @@ cat > ~/.pi/agent/models.json <<'JSON'
       "apiKey": "!cat ~/.pi/agent/cortecs_api_key",
       "authHeader": true,
       "models": [
-        {
-          "id": "devstral-2512",
-          "name": "Devstral 2 2512 (Cortecs)",
-          "contextWindow": 262000
-        }
+        { "id": "glm-4.6", "name": "GLM-4.6 (Cortecs)", "contextWindow": 203000 },
+        { "id": "devstral-2512", "name": "Devstral 2 2512 (Cortecs)", "contextWindow": 262000 },
+        { "id": "qwen3-coder-30b-a3b-instruct", "name": "Qwen3 Coder 30B-A3B (Cortecs)", "contextWindow": 262000 },
+        { "id": "qwen3-30b-a3b-instruct-2507", "name": "Qwen3 30B-A3B 2507 (Cortecs)", "contextWindow": 262000 },
+        { "id": "qwen3-coder-next", "name": "Qwen3 Coder Next (Cortecs)", "contextWindow": 256000 },
+        { "id": "qwen3-next-80b-a3b-thinking", "name": "Qwen3 Next 80B-A3B Thinking (Cortecs)", "contextWindow": 128000 },
+        { "id": "deepseek-v3.2", "name": "DeepSeek V3.2 (Cortecs)", "contextWindow": 163840 }
       ]
     }
   }
@@ -180,12 +193,12 @@ JSON
 the key never lands in an env var. If you chose Option B in Step 4, swap the
 `!cat …` value for your `!op read …` command.
 
-`devstral-2512` is the exact ID Cortecs expects (verified against its catalog;
-there's also a lighter `devstral-small-2512`). To see every EU model on offer
-and add more to the allow-list, query the catalog —
+These are the exact IDs Cortecs expects (verified against its catalog; Devstral
+also has a lighter `devstral-small-2512`). To see every EU model on offer and
+add more to the allow-list, query the catalog —
 `curl -s https://api.cortecs.ai/v1/models -H "Authorization: Bearer $(cat ~/.pi/agent/cortecs_api_key)" | jq '.data[].id'`
 — or browse <https://cortecs.ai/serverlessModels>, then add the IDs you want
-to the `models` array.
+to the `models` array. The default model itself is picked in Step 9.
 
 ## 6. Add the skills bundle
 
@@ -195,7 +208,7 @@ under `~/.pi/agent/skills/`.
 
 ```bash
 git clone https://github.com/simlans/pi-skills.git ~/Documents/projects/pi-skills
-git -C ~/Documents/projects/pi-skills checkout 575947b6b37a8ac6e635c72d62161ddc52af325b
+git -C ~/Documents/projects/pi-skills checkout 2eeab00942f55a4212241c872986cbe1ba1802db
 mkdir -p ~/.pi/agent/skills
 ln -sfn ~/Documents/projects/pi-skills/skills ~/.pi/agent/skills/pi-skills
 ```
@@ -369,14 +382,28 @@ pi
 # inside pi:
 /login
 
-# Essentials (nicobailon) + Felix Gladisch's extensions — all from npm,
-# unpinned so you always get the latest release:
-pi install npm:pi-mcp-adapter
+# Essentials (nicobailon) + Felix Gladisch's + the rpiv (@juicesharp) set —
+# all from npm, unpinned so you always get the latest release:
 pi install npm:pi-subagents
-pi install  
+pi install npm:pi-web-access
 pi install npm:@fgladisch/pi-persistent-history
-pi install npm:@fgladisch/pi-user-select
+pi install npm:@juicesharp/rpiv-ask-user-question
+pi install npm:@juicesharp/rpiv-todo
+pi install npm:@juicesharp/rpiv-i18n
 ```
+
+`@juicesharp/rpiv-i18n` reads its UI language from
+`~/.config/rpiv-i18n/locale.json`. Create it once (German, to match the rest of
+the setup); on NixOS this is rendered by `xdg.configFile."rpiv-i18n/locale.json"`:
+
+```bash
+mkdir -p ~/.config/rpiv-i18n
+printf '%s\n' '{ "locale": "de" }' > ~/.config/rpiv-i18n/locale.json
+```
+
+(`@juicesharp/rpiv-config` may also appear under `~/.pi/agent/npm/node_modules`
+— that's a transitive dependency of the rpiv extensions, not something you
+install directly, so it's not in the `packages` list.)
 
 To refresh them to the newest versions later, run `pi update --extensions`
 (or `pi update`, which also updates Pi itself).
@@ -420,10 +447,41 @@ extensions, it's intentionally **not** synced or Nix-managed. Run `/login`
 *credentials and state* stay per-machine.
 
 Then pick the model: run `pi`, press **Ctrl+L**, and select
-**Devstral 2 2512 (Cortecs)**. To offer more European models, add their IDs to
+**GLM-4.6 (Cortecs)** (the default agent model; Devstral 2 2512 stays selectable
+for comparison). To offer more European models, add their IDs to
 the `models` array in `~/.pi/agent/models.json` (Step 5 shows how to list the
 catalog). On macOS this file is mutable, so edits just stick — no rebuild
 needed.
+
+## 10. Subagent model overrides
+
+`pi-subagents` ships eight builtin agents (`scout`, `context-builder`,
+`delegate`, `researcher`, `worker`, `reviewer`, `planner`, `oracle`). By default
+they all inherit `defaultModel` (GLM-4.6) — correct but wasteful, since the
+cheap recon roles don't need a 0.355/1.553 €/Mtok model. We pin each role to the
+cheapest model that's sensible for its job via `subagents.agentOverrides` in
+`settings.json`. **GLM-4.6 stays the main agent's model**; these only affect
+delegated child runs. All picks are EU-hosted, open-weight (no Claude/Gemini/GPT)
+and mostly self-hostable Qwen3 MoEs:
+
+| Role | Model | €/Mtok in/out | Why |
+|---|---|---|---|
+| scout, context-builder | `qwen3-coder-30b-a3b-instruct` | 0.053 / 0.222 | cheap, fast code read+summarise |
+| delegate, researcher | `qwen3-30b-a3b-instruct-2507` | 0.089 / 0.268 | light general/research, tools |
+| worker, reviewer | `qwen3-coder-next` | 0.15 / 0.8 | strong coder, cheaper than Devstral |
+| planner | `qwen3-next-80b-a3b-thinking` | 0.134 / 1.073 | thinking model for plans |
+| oracle | `deepseek-v3.2` | 0.266 / 0.444 | different lineage = a real second opinion |
+
+Every model referenced here must also be in the `models.json` allow-list
+(Step 5) — the cortecs provider only knows the IDs you list, so an override
+pointing at an undeclared model won't resolve. The `model` value uses the
+explicit `cortecs/<id>` form; bare IDs also resolve since these models are
+cortecs-unique, but the prefix is unambiguous. `thinking` is appended as a
+`:level` suffix at runtime (kept `low` for the cheap roles, `high` for the
+reasoning ones). Override a single run instead with
+`/run reviewer[model=cortecs/qwen3-coder-next:high] "…"`. List live prices with
+`curl -s https://api.cortecs.ai/v1/models -H "Authorization: Bearer $(cat
+~/.pi/agent/cortecs_api_key)" | jq '.data[] | {id, pricing}'`.
 
 ## Verify
 

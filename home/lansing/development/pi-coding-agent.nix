@@ -1,20 +1,19 @@
 { pkgs, osConfig, ... }:
 let
-  # simlans/pi-skills is a fork of fgladisch/pi-skills (Felix Gladisch's
-  # adapted superpowers + subagent-aware versions). Pi walks
-  # ~/.pi/agent/skills/ at startup and on /reload, so any SKILL.md under
-  # the pinned tree becomes invokable as `/skill:<name>`. Bump rev + hash
-  # to roll forward.
+  # simlans/pi-skills is our own skill repo — NOT a fork of fgladisch/pi-skills
+  # (Felix's superpowers port is no longer used; the only Felix dependency left
+  # is the `@fgladisch/pi-persistent-history` extension in `piPackages` below).
+  # It currently holds a single `commit` skill; add more SKILL.md trees there
+  # over time. Pi walks ~/.pi/agent/skills/ at startup and on /reload, so any
+  # SKILL.md under the pinned tree becomes invokable as `/skill:<name>`.
   #
-  # Bootstrap: after forking on GitHub, populate `rev` and `hash` via
+  # Roll forward by pushing to the repo, then re-pinning rev + hash via:
   #   nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main
-  # The placeholder values below intentionally fail the fixed-output
-  # derivation so a build error surfaces the missing step.
   piSkills = pkgs.fetchFromGitHub {
     owner = "simlans";
     repo = "pi-skills";
-    rev = "575947b6b37a8ac6e635c72d62161ddc52af325b";
-    hash = "sha256-ZcVITFhkYN7BflKKWALK+eUa+cUZa7McAuhTGkn+oDw=";
+    rev = "2eeab00942f55a4212241c872986cbe1ba1802db";
+    hash = "sha256-7UHDOp+Ssab/sMUt2KeBGa0qdR952876Y0ZoSbFmL7g=";
   };
 
   piProfileName = "pi-dev";
@@ -23,19 +22,25 @@ let
   # oneshot service below runs `pi update --extensions` on login, and without
   # a version suffix npm resolves each to its latest release — so every login
   # refreshes to newest (we want current over frozen). This list is the single
-  # source of truth. The three unscoped ones are the recommended essentials
-  # (nicobailon); the four `@fgladisch/...` are Felix Gladisch's extensions.
-  # NB: Felix ships these on **npm**, NOT installable via the old
-  # `git:github.com/.../pi-extensions/packages/<name>` syntax — Pi has no
-  # git-monorepo subpath support (so the `simlans/pi-extensions` fork is not
-  # needed). KEEP IN SYNC with the Mac's ~/.pi/agent/settings.json
-  # (docs/pi-coding-agent-macos.md).
+  # source of truth. Two unscoped essentials (`pi-subagents`, `pi-web-access`,
+  # nicobailon), one `@fgladisch/...` (Felix Gladisch's `pi-persistent-history`),
+  # and the three `@juicesharp/rpiv-*` ("rpiv") set. NB: all ship on **npm**,
+  # NOT installable via the old `git:github.com/.../pi-extensions/packages/<name>`
+  # syntax — Pi has no git-monorepo subpath support (so the `simlans/pi-extensions`
+  # fork is not needed). KEEP IN SYNC with the Mac's ~/.pi/agent/settings.json
+  # (docs/pi-coding-agent-macos.md) — this list matches the Mac's exactly.
+  #
+  # `@juicesharp/rpiv-config` shows up under ~/.pi/agent/npm/node_modules but is
+  # NOT listed here on purpose — it's a transitive dependency of the rpiv
+  # extensions, not a package you install directly. `rpiv-i18n` additionally
+  # reads ~/.config/rpiv-i18n/locale.json (managed via xdg.configFile below).
   piPackages = [
-    "npm:pi-mcp-adapter"
     "npm:pi-subagents"
     "npm:pi-web-access"
     "npm:@fgladisch/pi-persistent-history"
-    "npm:@fgladisch/pi-user-select"
+    "npm:@juicesharp/rpiv-ask-user-question"
+    "npm:@juicesharp/rpiv-todo"
+    "npm:@juicesharp/rpiv-i18n"
   ];
 
   # nono profile for `spi`: Pi run inside a sandbox. Extends nono's built-in
@@ -131,6 +136,67 @@ in
     transport = "auto";
     enableInstallTelemetry = false;
     packages = piPackages;
+
+    # Default model, set declaratively. On the Mac you'd pick this once via
+    # Ctrl+L and it sticks (mutable file); here settings.json is a read-only
+    # /nix/store symlink, so an in-app pick can't persist — without these keys
+    # Pi would fall back to whatever /login provided (Claude). Pin GLM-4.6 as
+    # the main reasoning/coding model instead: cheaper than Devstral and far
+    # more disciplined in agentic tool-loops. KEEP IN SYNC with the Mac.
+    defaultProvider = "cortecs";
+    defaultModel = "glm-4.6";
+    defaultThinkingLevel = "medium";
+
+    # pi-subagents per-role model overrides. Builtin subagents otherwise
+    # inherit `defaultModel` (GLM-4.6) — fine, but wasteful: the cheap recon
+    # roles don't need a 0.355/1.553 €/Mtok model. We pin each of the eight
+    # builtins to the cheapest model that's sensible for its job (see the
+    # models.json allow-list above for prices). GLM-4.6 stays the *main* model;
+    # these only affect delegated child runs. Refs use the explicit
+    # `cortecs/<id>` form (provider/model); bare IDs would also resolve since
+    # these models are cortecs-unique, but the prefix is unambiguous.
+    # `thinking` is appended as a `:level` suffix at runtime — kept low for the
+    # cheap roles, high for the reasoning ones. KEEP IN SYNC with the Mac.
+    subagents.agentOverrides = {
+      # read & summarise — cheapest code model, no deep thinking needed
+      scout = {
+        model = "cortecs/qwen3-coder-30b-a3b-instruct";
+        thinking = "low";
+      };
+      "context-builder" = {
+        model = "cortecs/qwen3-coder-30b-a3b-instruct";
+        thinking = "low";
+      };
+      # light general orchestration / web-doc research
+      delegate = {
+        model = "cortecs/qwen3-30b-a3b-instruct-2507";
+        thinking = "low";
+      };
+      researcher = {
+        model = "cortecs/qwen3-30b-a3b-instruct-2507";
+        thinking = "low";
+      };
+      # code production — strong dedicated coder, cheaper than the GLM-4.6 main
+      worker = {
+        model = "cortecs/qwen3-coder-next";
+        thinking = "medium";
+      };
+      reviewer = {
+        model = "cortecs/qwen3-coder-next";
+        thinking = "medium";
+      };
+      # deep reasoning
+      planner = {
+        model = "cortecs/qwen3-next-80b-a3b-thinking";
+        thinking = "high";
+      };
+      # oracle: deliberately a different model family from GLM/Qwen so the
+      # "second opinion" actually challenges assumptions instead of echoing them
+      oracle = {
+        model = "cortecs/deepseek-v3.2";
+        thinking = "high";
+      };
+    };
   };
 
   # Cortecs custom provider (OpenAI-compatible). `apiKey: "!…"` is Pi's
@@ -153,10 +219,55 @@ in
       apiKey = "!cat ${osConfig.sops.secrets."pi/cortecs_api_key".path}";
       authHeader = true;
       models = [
+        # Main agent model (defaultModel in settings.json). GLM-4.6 (Z.ai,
+        # open-weight) — 0.355/1.553 €/Mtok, cheaper than Devstral on *both*
+        # axes and far more disciplined in agentic tool-loops, so it ends the
+        # degenerate "re-read the same file forever" failures a 24B dense model
+        # like Devstral fell into. Self-hostable later on the B300 cluster
+        # (~357B MoE, fits in ~2 B300s at FP8).
+        {
+          id = "glm-4.6";
+          name = "GLM-4.6 (Cortecs)";
+          contextWindow = 203000;
+        }
+        # Kept selectable under /model, but no longer the default (loop-prone).
         {
           id = "devstral-2512";
           name = "Devstral 2 2512 (Cortecs)";
           contextWindow = 262000;
+        }
+        # Subagent fleet — referenced by `subagents.agentOverrides` in
+        # settings.json below. Listing them here is REQUIRED: the cortecs
+        # provider only knows the IDs in this array (it's the allow-list), so a
+        # subagent override pointing at a model that isn't declared here would
+        # fail to resolve. All are EU-hosted, open-weight (no Claude/Gemini/GPT)
+        # and chosen to minimise cost per role while staying self-hostable —
+        # mostly Qwen3 ~30-80B MoEs. Prices verified against the live catalog
+        # (curl …/v1/models) on 2026-06-07; re-check before relying on them.
+        {
+          id = "qwen3-coder-30b-a3b-instruct"; # 0.053/0.222 €/Mtok — scout, context-builder
+          name = "Qwen3 Coder 30B-A3B (Cortecs)";
+          contextWindow = 262000;
+        }
+        {
+          id = "qwen3-30b-a3b-instruct-2507"; # 0.089/0.268 — delegate, researcher
+          name = "Qwen3 30B-A3B 2507 (Cortecs)";
+          contextWindow = 262000;
+        }
+        {
+          id = "qwen3-coder-next"; # 0.15/0.8 — worker, reviewer (cheaper than Devstral)
+          name = "Qwen3 Coder Next (Cortecs)";
+          contextWindow = 256000;
+        }
+        {
+          id = "qwen3-next-80b-a3b-thinking"; # 0.134/1.073 — planner (thinking model)
+          name = "Qwen3 Next 80B-A3B Thinking (Cortecs)";
+          contextWindow = 128000;
+        }
+        {
+          id = "deepseek-v3.2"; # 0.266/0.444 — oracle (distinct lineage = real 2nd opinion)
+          name = "DeepSeek V3.2 (Cortecs)";
+          contextWindow = 163840;
         }
       ];
     };
@@ -171,6 +282,13 @@ in
   # `nono run --profile pi-dev` (i.e. the spi wrapper) picks it up.
   xdg.configFile."nono/profiles/${piProfileName}.json".text =
     builtins.toJSON piNonoProfile;
+
+  # @juicesharp/rpiv-i18n reads its UI locale from here. Set on the Mac first
+  # (~/.config/rpiv-i18n/locale.json) and mirrored into Nix for parity — German
+  # UI to match the rest of the setup. KEEP IN SYNC with the Mac.
+  xdg.configFile."rpiv-i18n/locale.json".text = builtins.toJSON {
+    locale = "de";
+  };
 
   # Fetch the declared extensions automatically. `pi install` can't be used
   # on NixOS (it writes settings.json, a read-only symlink here), so the list

@@ -360,7 +360,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
 
 5. **Pi coding agent + Cortecs** — the `pi-coding-agent` and `nono`
    binaries are installed system-wide on both hosts; `~/.pi/agent/{settings,
-   models}.json`, the pinned Felix-Gladisch skills bundle, and the `nono`
+   models}.json`, the pinned `simlans/pi-skills` skills bundle, and the `nono`
    sandbox profile come in via home-manager
    (`home/lansing/development/pi-coding-agent.nix`). See
    [`docs/pi-coding-agent.md`](docs/pi-coding-agent.md) for the full
@@ -369,8 +369,9 @@ Once the system boots into Niri, finish the per-user bootstrap:
    [`docs/pi-coding-agent-macos.md`](docs/pi-coding-agent-macos.md).
    Three one-time steps remain after the first rebuild on a host:
 
-   1. **Fork the skills repo and pin it.** Fork `fgladisch/pi-skills` to
-      `simlans/pi-skills`, then set its `rev` + `hash` in
+   1. **Pin the skills repo.** The skills live in our own `simlans/pi-skills`
+      repo (currently just a `commit` skill — not a fork of Felix's
+      `pi-skills`). Set its `rev` + `hash` in
       `home/lansing/development/pi-coding-agent.nix`:
       ```bash
       nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main
@@ -407,9 +408,9 @@ Once the system boots into Niri, finish the per-user bootstrap:
    work (Pi has no git-monorepo-subpath support).
 
    Then either `pi` (unsandboxed, full access) or `spi` (sandboxed via
-   nono, recommended) starts the agent. The Cortecs Devstral model and your
-   Claude models show up under `/model` (Ctrl+L) once the sops key is present
-   and you've logged in.
+   nono, recommended) starts the agent. The Cortecs models (GLM-4.6 by
+   default, Devstral 2 2512 also selectable) and your Claude models show up
+   under `/model` (Ctrl+L) once the sops key is present and you've logged in.
 
    First-activation gotcha: if `~/.pi/agent/settings.json` or
    `~/.pi/agent/models.json` already exist as plain files (from a manual
