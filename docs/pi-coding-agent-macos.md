@@ -261,7 +261,9 @@ nono profile init pi-dev --extends node-dev
   },
   "filesystem": {
     "allow": ["$HOME/.pi", "$HOME/.cache", "$TMPDIR"],
-    "read":  ["$HOME/.agents", "$HOME/.config/git", "$HOME/Documents/projects/.gitconfig"]
+    "read":  ["$HOME/.agents", "$HOME/.config/git", "$HOME/Documents/projects/.gitconfig"],
+    "unix_socket":       ["~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"],
+    "bypass_protection": ["~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"]
   },
   "network": {
     "network_profile": "developer",
@@ -292,9 +294,11 @@ Notes:
   file (identity, signing key, `gpgsign`), so granting read is least-privilege.
   Confirm it resolved with `nono profile show pi-dev | grep gitconfig` and that
   git works with `nono run --allow-cwd --profile pi-dev -- git config --get user.email`.
-  (Signed *commits* additionally need the 1Password SSH agent + `op-ssh-sign`,
-  which the sandbox doesn't grant — run those under plain `pi`, or extend the
-  profile separately. Reading the config for `git status`/`log` works as-is.)
+  (Signed *commits* **work inside the sandbox**: the profile allows the
+  1Password SSH agent socket via `filesystem.unix_socket` +
+  `filesystem.bypass_protection`, so `op-ssh-sign` reaches it and signs.
+  Verified with a signed empty commit under `nono run --profile pi-dev`.
+  **Pushing stays blocked** by design — see the next bullet.)
 - **No `git push` / `gh` auth from inside `spi` — by design.** The `node-dev`
   base inherits nono's `default` deny on credentials and the macOS **Keychain**,
   which is exactly where both git's `osxkeychain` helper

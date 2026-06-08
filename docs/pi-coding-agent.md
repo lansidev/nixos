@@ -454,4 +454,5 @@ Documentation:
 - [Pi custom providers](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md) — how `~/.pi/agent/models.json` works
 - [Pi extensions](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md) — how `pi install` and the extension API works
 - [Cortecs.AI docs](https://docs.cortecs.ai/) — OpenAI-compatible endpoint at `https://api.cortecs.ai/v1`
+- [Cortecs glm-4.6 tool-name bug](cortecs-glm46-toolname-bug.md) — known provider bug (glm-4.6 truncates tool-call names); why the main model is temporarily `qwen3-next-80b-a3b-thinking`
 - [nono.sh docs](https://nono.sh/docs/cli/getting_started/installation) — sandbox tool (Landlock LSM on Linux, Seatbelt on macOS)

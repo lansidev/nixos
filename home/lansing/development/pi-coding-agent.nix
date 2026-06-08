@@ -86,6 +86,17 @@ let
         "/run/secrets/git"
         "/nix/store"
       ];
+      # Allow the 1Password SSH agent socket so the sandboxed agent can *sign*
+      # commits: git's `gpg.ssh.program` is `op-ssh-sign` from
+      # `pkgs._1password-gui` (in /nix/store, already read above), the signing
+      # key + `allowed_signers` live under `~/.config/git` (also read above), and
+      # the only missing piece is reaching the agent socket. `bypass_protection`
+      # exempts it from the `deny_credentials` group that blocks `~/.1password`.
+      # Pushing stays blocked by design — the network proxy isn't SSH-aware and
+      # the sandbox holds no HTTPS/keychain token. KEEP IN SYNC with the Mac (it
+      # uses the macOS Group Containers agent.sock path — see the macOS doc).
+      unix_socket = [ "$HOME/.1password/agent.sock" ];
+      bypass_protection = [ "$HOME/.1password/agent.sock" ];
     };
 
     network = {
@@ -140,11 +151,20 @@ in
     # Default model, set declaratively. On the Mac you'd pick this once via
     # Ctrl+L and it sticks (mutable file); here settings.json is a read-only
     # /nix/store symlink, so an in-app pick can't persist — without these keys
-    # Pi would fall back to whatever /login provided (Claude). Pin GLM-4.6 as
-    # the main reasoning/coding model instead: cheaper than Devstral and far
-    # more disciplined in agentic tool-loops. KEEP IN SYNC with the Mac.
+    # Pi would fall back to whatever /login provided (Claude). GLM-4.6 was the
+    # main model (disciplined in tool-loops, cheaper than Devstral), but it is
+    # unusable here: glm-4.6 on Cortecs (AtlasCloud backend) returns TRUNCATED
+    # tool-call function names ("ask_user_question" → "ask_u"), in both stream
+    # and non-stream mode — verified against the raw API; Qwen models on the
+    # same provider are unaffected. So any tool/extension with a multi-token
+    # name (ask_user_question, …) breaks under glm-4.6. Its first replacement,
+    # qwen3-coder-next, gets names right but serialises NESTED tool arguments as
+    # JSON strings (breaks ask_user_question/write), so the main model is now
+    # qwen3-next-80b-a3b-thinking — verified correct on both tool names and
+    # nested arguments, EU-sovereign. Revert to glm-4.6 once Cortecs fixes the
+    # truncation. KEEP IN SYNC with the Mac.
     defaultProvider = "cortecs";
-    defaultModel = "glm-4.6";
+    defaultModel = "qwen3-next-80b-a3b-thinking";
     defaultThinkingLevel = "medium";
 
     # pi-subagents per-role model overrides. Builtin subagents otherwise
