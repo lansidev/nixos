@@ -75,7 +75,8 @@ let
     # the real way instead, by denying its socket below.
     filesystem = {
       deny = [ "/var/run/docker.sock" ];
-      # `allow` is read+write in the current schema, so no separate `write`.
+      # `allow` is read+write in the current schema; the `write` list below adds
+      # write-only paths on top of the base profile's default reads.
       allow = [
         "$HOME/.pi"
         "$HOME/.cache"
@@ -88,6 +89,10 @@ let
         "/run/secrets/git"
         "/nix/store"
       ];
+      # @zosmaai/pi-llm-wiki writes its raw pages here. Scoped to the wiki dir,
+      # NOT all of $HOME (an earlier `$HOME` write grant was removed — too broad).
+      # KEEP IN SYNC with the Mac (~/.config/nono/profiles/pi-dev.json).
+      write = [ "$HOME/.llm-wiki/raw" ];
       # Allow the 1Password SSH agent socket so the sandboxed agent can *sign*
       # commits: git's `gpg.ssh.program` is `op-ssh-sign` from
       # `pkgs._1password-gui` (in /nix/store, already read above), the signing
