@@ -22,7 +22,7 @@ defeats the point.
 
 What lives where:
 
-| Concern | macOS (plain files, this doc) | NixOS (`home/lansing/development/pi-coding-agent.nix`) |
+| Concern | macOS (plain files, this doc) | NixOS (`modules/development/pi-coding-agent.nix`) |
 |---|---|---|
 | models / providers | `~/.pi/agent/models.json` | `home.file.".pi/agent/models.json"` |
 | local models / Ollama | the Ollama.app + `providers.ollama` in `~/.pi/agent/models.json` | `services.ollama` (`modules/development/ollama.nix`) + `providers.ollama` |
@@ -169,7 +169,7 @@ bug (Step 9), so `qwen3-next-80b-a3b-thinking` is the working cloud fallback;
 is the open-weight Qwen3/DeepSeek fleet the subagents are pinned to (Step 10) —
 every model a `subagents.agentOverrides` entry references must be listed here or
 it won't resolve. Reproduce the full list from the nix file
-(`home/lansing/development/pi-coding-agent.nix`) so the Mac matches the hosts:
+(`modules/development/pi-coding-agent.nix`) so the Mac matches the hosts:
 
 ```bash
 cat > ~/.pi/agent/models.json <<'JSON'
@@ -233,7 +233,7 @@ Notes:
 To roll skills forward later: `git -C ~/Documents/projects/pi-skills checkout
 main && git -C ~/Documents/projects/pi-skills pull` — and, to keep the Mac and
 the NixOS hosts in lockstep, bump the pinned `rev`/`hash` in
-`home/lansing/development/pi-coding-agent.nix` to the same commit.
+`modules/development/pi-coding-agent.nix` to the same commit.
 
 ## 7. Create the `nono` sandbox profile
 
@@ -330,7 +330,7 @@ Notes:
   then resolves any GitHub SSH URL back to HTTPS, so the agent can't strand the
   remote on the proxy-blocked SSH transport. It's the `GIT_CONFIG_GLOBAL` file,
   so it's read inside the sandbox too. NixOS mirrors this in
-  `home/lansing/development/git.nix` (`programs.git.settings.url`), rendered into
+  `modules/development/git.nix` (`programs.git.settings.url`), rendered into
   `~/.config/git/config`. Verify with `git ls-remote --get-url
   git@github.com:owner/repo.git` → it prints the `https://` form.
 - `network_profile: "developer"` already covers the LLM/package/GitHub
@@ -351,7 +351,7 @@ Notes:
   doesn't exist on macOS, and the sandbox doesn't grant the Docker socket
   anyway, so there's nothing to add here.
 - **In sync with NixOS:** the repo's Linux profile (`piNonoProfile` in
-  `home/lansing/development/pi-coding-agent.nix`) uses the **same** schema and
+  `modules/development/pi-coding-agent.nix`) uses the **same** schema and
   the same `extends: node-dev` base, validated identically. Only the filesystem
   paths and the cache group differ by necessity: the NixOS side adds
   `/run/secrets/{pi,git}` + `/nix/store` reads and the `/var/run/docker.sock`
@@ -441,7 +441,7 @@ To refresh them to the newest versions later, run `pi update --extensions`
 `pi install` records each package in `~/.pi/agent/settings.json`'s `packages`
 array and downloads the code to `~/.pi/agent/npm/`. On the **NixOS hosts** you
 don't run these commands at all: the `packages` list is declared in
-`home/lansing/development/pi-coding-agent.nix` and a `pi-extensions` systemd
+`modules/development/pi-coding-agent.nix` and a `pi-extensions` systemd
 user service runs `pi update --extensions` to fetch them automatically (only
 `/login` stays manual there). Keep this list and that Nix list identical.
 

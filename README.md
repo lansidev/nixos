@@ -177,53 +177,30 @@ or from a home-manager module via `osConfig.sops.secrets."<key>".path`.
 ## Layout
 
 ```
-flake.nix                                # inputs + nixosConfigurations.{battlestation,workstation} + apps.{tailscale-up,init-account,sops-onboard-host}
+flake.nix                                # inputs + flake-parts mkFlake over (import-tree ./modules)
 .sops.yaml                               # sops recipients (per-host SSH host pubkeys + per-user age pubkey)
-secrets/personal.yaml                    # sops-encrypted YAML — git/{author_name,author_email,github_user}
-disko/battlestation.nix                  # GPT: 1 GiB ESP (FAT32) + LUKS→ext4 root (desktop NVMe)
+secrets/personal.yaml                    # sops-encrypted YAML — git/{author_name,author_email,github_user}, pi/*, sunshine/*
+disko/battlestation.nix                  # GPT: 1 GiB ESP (FAT32) + LUKS→ext4 root (desktop NVMe); plain NixOS module, outside modules/
 disko/workstation.nix                    # same layout, separate file so #workstation has its own module path
-hosts/battlestation/
-  default.nix                            # host imports + hostName + stateVersion + ISO keyboard + DP-1 niri output
-  hardware-configuration.nix             # AMD CPU (kvm-amd, amd_pstate=active, microcode), NVMe initrd modules
-hosts/workstation/
-  default.nix                            # host imports + hostName + stateVersion + ANSI keyboard + eDP-1 niri output
-  hardware-configuration.nix             # Intel CPU (kvm-intel, microcode), NVMe + thunderbolt initrd modules — placeholder, regenerate after first boot
-modules/
-  system/
-    base.nix                             # locale, time, nix settings, OS toolbox
-    boot.nix                             # Lanzaboote (Secure Boot), linuxPackages_latest
-    network.nix                          # NetworkManager, bluetooth, firewall
-    users.nix                            # user lansing (incl. docker group)
-    openssh.nix                          # SSH server + authorized keys
-    sops.nix                             # sops-nix wrapper: defaultSopsFile + git/* secrets owned by lansing
-    tailscale.nix                        # tailscaled (auth key bootstrapped post-install)
-  desktop/
-    niri.nix                             # Niri WM, greetd+ReGreet, xdg-portal
-    keyboard-layout.nix                  # `lansing.desktop.{keyboardLayout,niriOutputs}` options + TTY keymap
-    laptop.nix                           # workstation-only: nixos-hardware framework module, fprintd, fwupd, thermald, lid behaviour
-    fonts.nix                            # Noto / Fira / JetBrains Nerd Fonts
-    audio.nix                            # PipeWire + rtkit
-    tools.nix                            # mako, wl-clipboard, grim, slurp, ...
-  apps/                                  # firefox (+ 1P extension), onepassword (GUI+CLI), discord, signal, spotify, opencloud, slack (workstation only)
-  gaming/                                # steam (+ 32-bit graphics), lutris (+ umu-launcher → GE-Proton for non-Steam Windows games)
-  development/                           # claude-code (unstable), pi-coding-agent (unstable), nono (sandbox, unstable), docker
-home/lansing/
-  default.nix                            # Home Manager root: identity + imports
-  cli.nix                                # ripgrep, fd, bat, eza, jq, yq, tree, htop, file
-  onepassword.nix                        # op-cache + IdentityAgent → 1P GUI agent
-  shell/
-    zsh.nix                              # zsh + oh-my-zsh + Powerlevel10k, aliases, history, auto-tmux
-    p10k/p10k.zsh                        # Powerlevel10k config (lean, kubecontext-aware right prompt)
-    tmux/                                # tmux + pinned gpakosz/.tmux + tmux.conf.local
-    direnv.nix                           # direnv + nix-direnv
-    fzf.nix                              # fzf + zsh integration (Ctrl+R history, Ctrl+T files, Alt+C cd)
-  development/
-    claude-code.nix                      # ~/.claude/settings.json (model, perms, attribution off, tmux hooks)
-    pi-coding-agent.nix                  # ~/.pi/agent/{settings,models}.json + pi-subagents async config + pinned skills bundle + nono profile + `spi` wrapper
-    git.nix                              # git + gh + delta (SSH signing on by default)
-    neovim/                              # neovim + LazyVim (lazy.nvim dev path → Nix-pinned plugins, treesitter parsers prebuilt, no mason)
-    kubernetes/                          # kubectl, k9s, fluxcd + k9s skin
-    golang.nix                           # go + gotools
+hosts/battlestation/hardware-configuration.nix  # AMD CPU (kvm-amd, amd_pstate=active, microcode), NVMe initrd modules
+hosts/workstation/hardware-configuration.nix    # Intel CPU (kvm-intel, microcode), NVMe + thunderbolt — placeholder, regenerate after first boot
+modules/                                 # every .nix file in here is a flake-parts module, auto-loaded by import-tree
+                                         # (dendritic pattern: one file = one feature, defining its NixOS and
+                                         #  home-manager halves side by side; same-named definitions merge into
+                                         #  buckets like `base`/`desktop`/`development`/`gaming`)
+  meta/                                  # flake plumbing: systems, bootstrap apps (perSystem), gitleaks pre-commit + devShell
+  hosts/battlestation.nix                # nixosConfigurations.battlestation = base+desktop+development+gaming+obs-studio+sunshine + host data (ISO keyboard, DP-1 output, rocm)
+  hosts/workstation.nix                  # nixosConfigurations.workstation  = base+desktop+development+gaming+laptop+slack + host data (ANSI keyboard, eDP-1 output)
+  users/lansing.nix                      # home-manager wiring + identity (each nixos bucket pulls its homeManager counterpart for lansing)
+  system/                                # → base: locale/nix settings, boot (lanzaboote), disko import, network, users, openssh, sops, tailscale
+  desktop/                               # → desktop: niri (NixOS + config.kdl renderer), keyboard-layout options, fonts, audio, power,
+                                         #   tools, keyring, alacritty (HM), noctalia (HM); laptop.nix → own `laptop` bucket (workstation)
+  apps/                                  # → desktop: firefox (+ 1P extension), onepassword (GUI + op-cache/SSH-agent HM half),
+                                         #   vesktop, signal, spotify, opencloud; slack + obs-studio have own buckets (host-specific)
+  gaming/                                # → gaming: steam (+ 32-bit graphics), lutris (+ umu-launcher); sunshine → own bucket (battlestation)
+  development/                           # → development: claude-code, pi-coding-agent, vscodium (each NixOS+HM in one file),
+                                         #   nono, docker, ollama; HM-only: git, neovim, kubernetes/, golang, opentofu
+  shell/                                 # → homeManager.base: cli tools, zsh (+ p10k), tmux, direnv, fzf
 ```
 
 ## First-time setup after the install
@@ -232,9 +209,9 @@ Once the system boots into Niri, finish the per-user bootstrap:
 
 1. **1Password GUI** — open the app, sign in to the personal account, then in
    *Settings → Developer* enable **Use the SSH agent**. That writes
-   `~/.1password/agent.sock`, which `home/lansing/onepassword.nix` wires into
+   `~/.1password/agent.sock`, which `modules/apps/onepassword.nix` wires into
    `~/.ssh/config` and the SSH-based git signing path. Git is configured to
-   commit-sign by default in `home/lansing/development/git.nix` — once the GUI
+   commit-sign by default in `modules/development/git.nix` — once the GUI
    agent is running, signed commits just work. Cross-repo `.envrc` files
    (e.g. `~/Projects/homelab`) that still call `op-cache read 'op://...'`
    additionally need *Integrate with 1Password CLI* enabled in the same dialog.
@@ -363,7 +340,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
    models}.json`, the `pi-subagents` background-execution config, the pinned
    `simlans/pi-skills` skills bundle, and the `nono`
    sandbox profile come in via home-manager
-   (`home/lansing/development/pi-coding-agent.nix`). See
+   (`modules/development/pi-coding-agent.nix`). See
    [`docs/pi-coding-agent.md`](docs/pi-coding-agent.md) for the full
    bootstrap walkthrough (architecture, design decisions, Mac sops
    access, troubleshooting). Running Pi on a Mac (no Nix) instead? See
@@ -373,7 +350,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
    1. **Pin the skills repo.** The skills live in our own `simlans/pi-skills`
       repo (currently just a `commit` skill — not a fork of Felix's
       `pi-skills`). Set its `rev` + `hash` in
-      `home/lansing/development/pi-coding-agent.nix`:
+      `modules/development/pi-coding-agent.nix`:
       ```bash
       nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main
       ```
@@ -400,7 +377,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
       (see below).
 
    Extensions are **not** installed by hand on NixOS. The pinned `packages`
-   list lives in `home/lansing/development/pi-coding-agent.nix`'s
+   list lives in `modules/development/pi-coding-agent.nix`'s
    `settings.json`, and a `pi-extensions` systemd user service runs
    `pi update --extensions` on login to fetch them into `~/.pi/agent/npm`
    (`pi install` can't be used — it writes the read-only `settings.json`
@@ -435,7 +412,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
 
 Niri does per-output workspaces by default — each screen has an independent vertical workspace stack, and `Mod+Up`/`Mod+Down` only scrolls the workspaces of the currently focused output. No `workspaces { … }` block is needed to keep the laptop and an external monitor independent.
 
-The `eDP-1` block already in `lansing.desktop.niriOutputs` (`hosts/workstation/default.nix`) is enough on its own. If no external monitor is plugged in, niri runs on the internal panel only; any monitor that gets plugged in afterwards is auto-detected with niri's defaults (preferred mode from EDID, scale 1, position to the right of existing outputs). Add an explicit `output { … }` block per external monitor when you want deterministic position, mode, or scale.
+The `eDP-1` block already in `lansing.desktop.niriOutputs` (`modules/hosts/workstation.nix`) is enough on its own. If no external monitor is plugged in, niri runs on the internal panel only; any monitor that gets plugged in afterwards is auto-detected with niri's defaults (preferred mode from EDID, scale 1, position to the right of existing outputs). Add an explicit `output { … }` block per external monitor when you want deterministic position, mode, or scale.
 
 ### Identify outputs by EDID, not by connector name
 
@@ -453,7 +430,7 @@ The internal panel runs at 2880×1920 with `scale 1.5`, so its logical size is *
 ### Example: home-office monitor + office monitor
 
 ```nix
-# In hosts/workstation/default.nix
+# In modules/hosts/workstation.nix
 lansing.desktop.niriOutputs = ''
   output "eDP-1" {
       mode "2880x1920@120.000"
@@ -483,7 +460,7 @@ Hot-plug works automatically: niri creates the output on connect (applying any m
 
 ### Pinning an app to a specific output
 
-If a window should always open on a particular monitor, add a `window-rule` to `home/lansing/desktop/niri.kdl` (outside the `@OUTPUTS@` placeholder area, since the rule is host-agnostic):
+If a window should always open on a particular monitor, add a `window-rule` to `modules/desktop/niri.kdl` (outside the `@OUTPUTS@` placeholder area, since the rule is host-agnostic):
 
 ```
 window-rule {
@@ -524,7 +501,7 @@ When the named output isn't connected, niri falls back to the currently focused 
 - **First `fwupd update`**: Framework distributes BIOS + EC firmware via LVFS. Some EC blobs aren't db-signed; if `fwupdmgr update` fails, toggle Secure Boot **off** in the BIOS, run the update, and re-enable Secure Boot afterwards.
 - **Fingerprint enrollment** (one-time, after first boot): `sudo fprintd-enroll lansing`. The PAM hooks for `login` and `sudo` are already wired up in `modules/desktop/laptop.nix`.
 - **Touchscreen**: handled by libinput + niri out of the box, no extra config needed.
-- **2.8K display**: niri runs the panel at `scale 1.5`. Verify the exact mode string with `niri msg outputs` after the first boot and adjust `lansing.desktop.niriOutputs` in `hosts/workstation/default.nix` if necessary.
+- **2.8K display**: niri runs the panel at `scale 1.5`. Verify the exact mode string with `niri msg outputs` after the first boot and adjust `lansing.desktop.niriOutputs` in `modules/hosts/workstation.nix` if necessary.
 - **WisdPi 10G**: USB-C 10GbE expansion card, Linux driver depends on the chipset (Aquantia `atlantic` or Realtek `r8152` — both mainline). Run `lsusb` from the install USB and add the chipset note to `AGENTS.md` once known.
 
 ## Fallback: manual install

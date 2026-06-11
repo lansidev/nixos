@@ -23,7 +23,7 @@ route is affected.
 
 ## Workaround in this repo (stopgap)
 
-`home/lansing/development/pi-coding-agent.nix` pins the main model to
+`modules/development/pi-coding-agent.nix` pins the main model to
 **`qwen3-next-80b-a3b-thinking`** instead of `glm-4.6` (`defaultModel`), mirrored
 on the Mac (`~/.pi/agent/settings.json`). It returns correct tool names **and**
 correct nested tool-call arguments, and is EU-sovereign. `glm-4.6` stays in the
@@ -56,7 +56,7 @@ the single source of truth for the current deviation.
 1. Re-run reproduction **A** below. If `function.name` is `ask_user_question`
    (not `ask_u`/`ask_us`), the bug is fixed.
 2. Set `defaultModel = "glm-4.6";` again in
-   `home/lansing/development/pi-coding-agent.nix` **and**
+   `modules/development/pi-coding-agent.nix` **and**
    `~/.pi/agent/settings.json` (KEEP IN SYNC), then `home-manager switch`
    (or `nixos-rebuild switch`) and restart Pi on the Mac.
 3. Remove the `AGENTS.md` pitfall entry and delete this file (or mark it
