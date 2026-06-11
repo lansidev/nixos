@@ -425,7 +425,7 @@ layer-rule {
 
 // Don't blur through Noctalia's overlays — keep them solid.
 layer-rule {
-    match namespace="^noctalia-(background|launcher-overlay|dock)-.*$"
+    match namespace="^noctalia-(backdrop|panel|attached-panel|dock|overview-launcher)$"
     background-effect {
         xray false
     }

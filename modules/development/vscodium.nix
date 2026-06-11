@@ -24,21 +24,20 @@ in
   };
 
   flake.modules.homeManager.development = { pkgs, ... }: {
-    # Electron's OSCrypt can't auto-pick a Secret Service backend under
-    # niri (XDG_CURRENT_DESKTOP=niri isn't on its known-desktops list), so
-    # VSCodium falls back to "basic" text encryption and warns "An OS
-    # keyring couldn't be identified …". Forcing the libsecret backend
-    # routes it at the gnome-keyring daemon (D-Bus activation set up in
-    # modules/desktop/keyring.nix). See microsoft/vscode#187338.
-    #
-    # VSCodium reads argv.json from .vscode-oss/, not .vscode/.
-    home.file.".vscode-oss/argv.json".text = builtins.toJSON {
-      "password-store" = "gnome-libsecret";
-    };
-
-    programs.vscode = {
+    programs.vscodium = {
       enable = true;
       package = (unstableFor pkgs).vscodium;
+
+      # Electron's OSCrypt can't auto-pick a Secret Service backend under
+      # niri (XDG_CURRENT_DESKTOP=niri isn't on its known-desktops list), so
+      # VSCodium falls back to "basic" text encryption and warns "An OS
+      # keyring couldn't be identified …". Forcing the libsecret backend
+      # routes it at the gnome-keyring daemon (D-Bus activation set up in
+      # modules/desktop/keyring.nix). See microsoft/vscode#187338.
+      # The vscodium module writes this to .vscode-oss/argv.json.
+      argvSettings = {
+        "password-store" = "gnome-libsecret";
+      };
 
       profiles.default.userSettings = {
         "files.autoSave" = "afterDelay";

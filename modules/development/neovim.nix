@@ -6,6 +6,11 @@
       vimAlias = true;
       viAlias = true;
 
+      # 26.05 flipped these defaults to false; adopt the new default
+      # explicitly (LazyVim is lua-only, no ruby/python3 provider needed).
+      withRuby = false;
+      withPython3 = false;
+
       extraPackages = with pkgs; [
         lua-language-server
         stylua
@@ -21,7 +26,7 @@
         lazy-nvim
       ];
 
-      extraLuaConfig =
+      initLua =
         let
           plugins = with pkgs.vimPlugins; [
             LazyVim

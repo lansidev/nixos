@@ -55,7 +55,7 @@
       if [ -r /etc/nixos/local/full-name ]; then
         desired=$(${pkgs.coreutils}/bin/head -n 1 /etc/nixos/local/full-name)
         if [ -n "$desired" ]; then
-          current=$(${pkgs.coreutils}/bin/getent passwd lansing \
+          current=$(${pkgs.getent}/bin/getent passwd lansing \
             | ${pkgs.coreutils}/bin/cut -d: -f5)
           if [ "$desired" != "$current" ]; then
             ${pkgs.shadow}/bin/usermod -c "$desired" lansing
