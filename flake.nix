@@ -81,45 +81,6 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, lanzaboote, git-hooks, noctalia, nixos-hardware, flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ (inputs.import-tree ./modules) ];
-      flake = {
-      nixosConfigurations.battlestation = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit self inputs; };
-        modules = [
-          disko.nixosModules.disko
-          ./disko/battlestation.nix
-          lanzaboote.nixosModules.lanzaboote
-          ./hosts/battlestation
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs; };
-            home-manager.users.lansing = import ./home/lansing;
-          }
-        ];
-      };
-
-      nixosConfigurations.workstation = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit self inputs; };
-        modules = [
-          disko.nixosModules.disko
-          ./disko/workstation.nix
-          lanzaboote.nixosModules.lanzaboote
-          ./hosts/workstation
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs; };
-            home-manager.users.lansing = import ./home/lansing;
-          }
-        ];
-      };
-      };
-    };
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }
