@@ -135,7 +135,21 @@
               -- Catppuccin Mocha instead of LazyVim's default tokyonight
               -- (whose background reads as blue); matches the rest of the desktop.
               { "LazyVim/LazyVim", import = "lazyvim.plugins", opts = { colorscheme = "catppuccin" } },
-              { "catppuccin/nvim", name = "catppuccin", opts = { flavour = "mocha" } },
+              -- catppuccin compiles its highlights to a cache. If `colorscheme
+              -- catppuccin` fires before our opts reach setup(), it self-calls
+              -- setup() with defaults (transparent_background = false) and applies
+              -- that; the later setup recompiles the cache but never re-applies it,
+              -- so the background stays opaque. Force setup with our opts and
+              -- re-apply the colorscheme to make transparency deterministic.
+              {
+                "catppuccin/nvim",
+                name = "catppuccin",
+                opts = { flavour = "mocha", transparent_background = true },
+                config = function(_, opts)
+                  require("catppuccin").setup(opts)
+                  vim.cmd.colorscheme("catppuccin")
+                end,
+              },
               { import = "lazyvim.plugins.extras.editor.neo-tree" },
               { import = "lazyvim.plugins.extras.coding.blink" },
 
