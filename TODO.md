@@ -29,4 +29,4 @@
 - [x] Add own workspace "gaming" for Steam
 - [x] VSCode Terminal shows square icon instead of a NixOS Flake symbol
 - [x] Wire up the Elgato Cam Link 4K (USB HDMI capture) so it shows up as a v4l2 source for video calls / OBS
-- [ ] Fix `applyLocalFullName` activation script in `modules/system/users.nix:55-58`: it calls `${pkgs.coreutils}/bin/getent`, but `getent` ships in `pkgs.glibc.bin` (coreutils never had it). Activation prints `No such file or directory` on every rebuild; the script reaches its goal accidentally because the failed `getent` returns empty and the subsequent `usermod -c` still runs. Replace with `${pkgs.glibc.bin}/bin/getent` (or drop getent and read GECOS another way).
+- [x] Fixed `applyLocalFullName` activation script in `modules/system/users.nix`: it called `${pkgs.coreutils}/bin/getent`, but `getent` is not in coreutils (it's glibc). Replaced with `${pkgs.getent}/bin/getent` (the dedicated glibc-getent package — cleaner than `${pkgs.glibc.bin}/bin/getent`). Verified the built activate script now references `getent-glibc`. Done in `d1a4d3d`.
