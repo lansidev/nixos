@@ -88,7 +88,10 @@
               fallback = false,
             },
             spec = {
-              { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+              -- Catppuccin Mocha instead of LazyVim's default tokyonight
+              -- (whose background reads as blue); matches the rest of the desktop.
+              { "LazyVim/LazyVim", import = "lazyvim.plugins", opts = { colorscheme = "catppuccin" } },
+              { "catppuccin/nvim", name = "catppuccin", opts = { flavour = "mocha" } },
               { import = "lazyvim.plugins.extras.editor.neo-tree" },
               { import = "lazyvim.plugins.extras.coding.blink" },
 
