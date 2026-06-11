@@ -3,7 +3,6 @@
 {
   flake.nixosConfigurations.battlestation = inputs.nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
-    specialArgs = { inherit inputs; inherit (inputs) self; };
     modules = with config.flake.modules.nixos; [
       base
       desktop
@@ -13,13 +12,6 @@
       sunshine
       ../../hosts/battlestation/hardware-configuration.nix
       ../../disko/battlestation.nix
-      inputs.home-manager.nixosModules.home-manager
-      {
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        home-manager.extraSpecialArgs = { inherit inputs; };
-        home-manager.users.lansing = import ../../home/lansing;
-      }
       {
         networking.hostName = "battlestation";
         system.stateVersion = "25.11";
