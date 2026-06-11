@@ -8,6 +8,7 @@
       config.flake.modules.nixos.base
       config.flake.modules.nixos.desktop
       config.flake.modules.nixos.laptop
+      config.flake.modules.nixos.slack
       ../../disko/workstation.nix
       ../../hosts/workstation
       inputs.home-manager.nixosModules.home-manager

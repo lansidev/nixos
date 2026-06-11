@@ -2,13 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../modules/_legacy/apps/firefox.nix
-    ../../modules/_legacy/apps/onepassword.nix
-    ../../modules/_legacy/apps/vesktop.nix
-    ../../modules/_legacy/apps/signal.nix
-    ../../modules/_legacy/apps/spotify.nix
-    ../../modules/_legacy/apps/obs-studio.nix
-    ../../modules/_legacy/apps/opencloud.nix
     ../../modules/_legacy/gaming/steam.nix
     ../../modules/_legacy/gaming/lutris.nix
     ../../modules/_legacy/gaming/sunshine.nix
