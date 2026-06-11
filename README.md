@@ -194,7 +194,8 @@ modules/                                 # every .nix file in here is a flake-pa
   users/lansing.nix                      # home-manager wiring + identity (each nixos bucket pulls its homeManager counterpart for lansing)
   system/                                # → base: locale/nix settings, boot (lanzaboote), disko import, network, users, openssh, sops, tailscale
   desktop/                               # → desktop: niri (NixOS + config.kdl renderer), keyboard-layout options, fonts, audio, power,
-                                         #   tools, keyring, alacritty (HM), noctalia (HM); laptop.nix → own `laptop` bucket (workstation)
+                                         #   tools, keyring, alacritty (HM), noctalia (HM); laptop.nix → own `laptop` bucket (generic laptop
+                                         #   behaviour; Framework-specific hardware lives in modules/hosts/workstation.nix)
   apps/                                  # → desktop: firefox (+ 1P extension), onepassword (GUI + op-cache/SSH-agent HM half),
                                          #   vesktop, signal, spotify, opencloud; slack + obs-studio have own buckets (host-specific)
   gaming/                                # → gaming: steam (+ 32-bit graphics), lutris (+ umu-launcher); sunshine → own bucket (battlestation)
@@ -493,13 +494,13 @@ When the named output isn't connected, niri falls back to the currently focused 
 - Battery: 74 Wh
 - Power adapter: 100 W USB-C (EU/KR plug)
 - Expansion cards: 3× USB-C, 1× USB-A (gen 2), 1× HDMI (3rd gen), 1× WisdPi 10G Ethernet, 1× SD
-- Fingerprint: Goodix sensor (handled by `services.fprintd` from `modules/desktop/laptop.nix`)
+- Fingerprint: Goodix sensor (handled by `services.fprintd` from `modules/hosts/workstation.nix`)
 
 ### Framework 13 Pro quirks
 
 - **Secure Boot reset path** (InsydeH2O, not AMI): *Administer Secure Boot → Erase all Secure Boot Settings* drops the firmware into Setup Mode so Lanzaboote's auto-enrollment can install PK/KEK/db on the next boot.
 - **First `fwupd update`**: Framework distributes BIOS + EC firmware via LVFS. Some EC blobs aren't db-signed; if `fwupdmgr update` fails, toggle Secure Boot **off** in the BIOS, run the update, and re-enable Secure Boot afterwards.
-- **Fingerprint enrollment** (one-time, after first boot): `sudo fprintd-enroll lansing`. The PAM hooks for `login` and `sudo` are already wired up in `modules/desktop/laptop.nix`.
+- **Fingerprint enrollment** (one-time, after first boot): `sudo fprintd-enroll lansing`. The PAM hooks for `login` and `sudo` are already wired up in `modules/hosts/workstation.nix`.
 - **Touchscreen**: handled by libinput + niri out of the box, no extra config needed.
 - **2.8K display**: niri runs the panel at `scale 1.5`. Verify the exact mode string with `niri msg outputs` after the first boot and adjust `lansing.desktop.niriOutputs` in `modules/hosts/workstation.nix` if necessary.
 - **WisdPi 10G**: USB-C 10GbE expansion card, Linux driver depends on the chipset (Aquantia `atlantic` or Realtek `r8152` — both mainline). Run `lsusb` from the install USB and add the chipset note to `AGENTS.md` once known.

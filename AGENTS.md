@@ -36,7 +36,7 @@ Two hosts, one flake, shared modules. The repo follows the **dendritic pattern**
 - **`home-manager`** as a NixOS module (not standalone)
 - **Niri** (Wayland tiler) via `programs.niri.enable`
 - **`linuxPackages_latest`** instead of the channel default (RDNA 4 needs ≥ 6.14)
-- **`nixos-hardware`** (`master`) — provides the `framework-intel-core-ultra-series3` module imported by the `laptop` aspect (`modules/desktop/laptop.nix`) for the workstation
+- **`nixos-hardware`** (`master`) — provides the `framework-intel-core-ultra-series3` module imported by `modules/hosts/workstation.nix` (hardware-specific, so it lives with the host, not in the generic `laptop` bucket)
 - **`git-hooks.nix`** (cachix) — provides the devShell `shellHook` that installs `.git/hooks/pre-commit` (currently runs `gitleaks` on staged content; see Pitfalls)
 - **`sops-nix`** (Mic92, master pin) — encrypted-at-rest secrets in `secrets/personal.yaml`, decrypted at activation into `/run/secrets/git/...` using the system's SSH host key (no separate decryption key file needed)
 - **Pi coding agent** (`pi-coding-agent` from `nixpkgs-unstable`) — model-agnostic terminal coding agent. Custom Cortecs.AI (cloud) and local Ollama providers wired up via `~/.pi/agent/models.json` — the default model is the local Ollama coding model `qwen3-coder-next-64k`; skills come from our own pinned `simlans/pi-skills` repo (not a fork of Felix's `pi-skills`); extensions are installed at runtime by Pi's own package manager. The `spi` wrapper runs Pi inside a `nono.sh` sandbox (Landlock LSM on Linux). See `docs/pi-coding-agent.md` for the bootstrap walkthrough and design decisions.
@@ -58,7 +58,7 @@ modules/                                   # ALL files below are flake-parts mod
     git-hooks.nix                          # perSystem checks.pre-commit (gitleaks) + devShells.default
   hosts/
     battlestation.nix                      # flake.nixosConfigurations.battlestation: buckets [base desktop development gaming obs-studio sunshine] + hardware/disko paths + host data (hostName, ISO keyboard, DP-1 output, rocm)
-    workstation.nix                        # flake.nixosConfigurations.workstation: buckets [base desktop development gaming laptop slack] + hardware/disko paths + host data (ANSI keyboard, eDP-1 output, workspace pinning)
+    workstation.nix                        # flake.nixosConfigurations.workstation: buckets [base desktop development gaming laptop slack] + hardware/disko paths + nixos-hardware framework module + host data (ANSI keyboard, eDP-1 output, workspace pinning, fprintd, thermald)
   users/
     lansing.nix                            # HM wiring: nixos.base imports home-manager + couples each nixos bucket to its homeManager counterpart; homeManager.base holds identity + pointerCursor
   system/                                  # → nixos.base
@@ -74,7 +74,7 @@ modules/                                   # ALL files below are flake-parts mod
     niri.nix                               # BOTH halves: programs.niri + greetd + xdg.portal + xkb (NixOS) AND the config.kdl renderer from niri.kdl (HM)
     niri.kdl                               # template with @MARKERS@, consumed by niri.nix's HM half
     keyboard-layout.nix                    # `lansing.desktop.{keyboardLayout,niriOutputs}` options + TTY console keymap (iso→de, ansi→us)
-    laptop.nix                             # nixos.laptop (workstation-only): nixos-hardware framework-intel-core-ultra-series3, fprintd, fwupd, thermald, lid behaviour, TLP override
+    laptop.nix                             # nixos.laptop (workstation-only): GENERIC laptop behaviour — fwupd, lid behaviour, TLP-off policy; device-specific bits (nixos-hardware profile, fprintd, thermald) live in modules/hosts/workstation.nix
     fonts.nix                              # Noto / JetBrains Nerd Fonts
     audio.nix                              # PipeWire + rtkit
     power.nix                              # upower + power-profiles-daemon
@@ -176,7 +176,7 @@ No import wiring needed — import-tree picks the file up, and the bucket alread
 - Shell-shaping tool (prompt, multiplexer, dir hook) → `modules/shell/<tool>.nix` contributing to `flake.modules.homeManager.base`.
 
 ### Enable a new service
-New file in the category that fits, contributing to the matching role bucket — it lands on both hosts automatically. For a host-specific service, give it its own bucket name (like `sunshine`) and add that name to the one host's module list in `modules/hosts/<host>.nix`; laptop-only behaviour goes into the `laptop` bucket (`modules/desktop/laptop.nix`). Don't squeeze it into `base.nix` — that should stay system fundamentals.
+New file in the category that fits, contributing to the matching role bucket — it lands on both hosts automatically. For a host-specific service, give it its own bucket name (like `sunshine`) and add that name to the one host's module list in `modules/hosts/<host>.nix`; generic laptop-only behaviour goes into the `laptop` bucket (`modules/desktop/laptop.nix`); device-specific wiring (vendor hardware profile, fingerprint reader, vendor thermal daemon) goes into the host module instead, keeping the bucket reusable for future laptops. Don't squeeze it into `base.nix` — that should stay system fundamentals.
 
 ### Update inputs
 ```bash
@@ -225,7 +225,7 @@ sudo nixos-rebuild test   --flake .#<host>     # activates without setting defau
 - **`hosts/workstation/hardware-configuration.nix` is a hand-written placeholder.** The Framework 13 Pro didn't physically exist when the file was committed, so it lists conservative Intel-laptop defaults. After the first boot of the laptop, run `sudo nixos-generate-config --show-hardware-config` and merge any new kernel modules / firmware bits into the file. As always, do **not** add `fileSystems` or `boot.initrd.luks.devices.*` back — disko (`disko/workstation.nix`) is authoritative.
 - **`amd_pstate=active` lives in `hosts/battlestation/hardware-configuration.nix`, not in the shared `modules/system/boot.nix`.** It is AMD-specific and breaks the workstation if it bleeds into the shared module again. The Intel CPU on the workstation uses `intel_pstate`/`intel_cpufreq` automatically — no kernel-param needed there.
 - **`console.keyMap` is derived from `lansing.desktop.keyboardLayout` in `modules/desktop/keyboard-layout.nix` (`iso → de`, `ansi → us`).** Don't hardcode `console.keyMap` directly in `base.nix` or anywhere else; the option is the single source of truth and drives both XKB (Wayland) and the Linux TTY console.
-- **`nixos-hardware`'s `common-pc-laptop`** (transitively imported by `framework-intel-core-ultra-series3`) enables TLP by default. We force `services.tlp.enable = lib.mkForce false;` in `modules/desktop/laptop.nix` so the existing `services.power-profiles-daemon` (`modules/desktop/power.nix`) stays the single power manager — TLP and ppd refuse to coexist.
+- **`nixos-hardware`'s `common-pc-laptop`** (transitively imported by `framework-intel-core-ultra-series3`, which `modules/hosts/workstation.nix` pulls in) enables TLP by default. The generic `laptop` bucket (`modules/desktop/laptop.nix`) forces `services.tlp.enable = lib.mkForce false;` as standing policy so the existing `services.power-profiles-daemon` (`modules/desktop/power.nix`) stays the single power manager — TLP and ppd refuse to coexist. Any future laptop host importing a hardware profile gets the guard for free.
 - **Framework 13 Pro BIOS uses InsydeH2O, not AMI.** Secure-Boot reset path is *Administer Secure Boot → Erase all Secure Boot Settings* (NOT the ASRock B850 path of *Custom → Clear Secure Boot Keys*). First `fwupdmgr update` may also need Secure Boot temporarily off because some EC blobs aren't db-signed.
 - **Niri `output { … }` blocks aren't pinned in `modules/desktop/niri.kdl` directly.** The kdl file has an `@OUTPUTS@` placeholder; the host fills it in via `lansing.desktop.niriOutputs` (battlestation: DP-1 ultrawide; workstation: eDP-1 HiDPI). Editing the kdl in place removes the placeholder and breaks templating.
 - **External-monitor `output` blocks should match by EDID `"Make Model Serial"`, not by connector name** (`DP-1`, `DP-2`, …). Connector enumeration depends on which USB-C port the cable is in and on the kernel's hot-plug order; the same monitor lands on `DP-1` in one dock and on `DP-3` on a single cable. EDID is read straight from the monitor and stays stable across ports, adapters, and docks. Use `niri msg outputs` to read the identifier from the live system. Niri does **per-output workspaces by default**, so no `workspaces { … }` block is required to keep the laptop and an external monitor independent. The position field uses logical (post-scale) pixels: with eDP-1 at scale 1.5 its logical size is 1920×1280, so a monitor placed at scale 1.0 to its right starts at `x=1920`. Detailed walk-through and examples live in `README.md` under "External displays (workstation)".
@@ -277,7 +277,7 @@ sudo nixos-rebuild test   --flake .#<host>     # activates without setting defau
 | Display | 2.8K touchscreen, 120 Hz | niri `scale 1.5`; libinput handles touch out of the box |
 | Wi-Fi / BT | (Framework default — Intel BE201 / AX210) | iwd backend in NetworkManager |
 | Ethernet | WisdPi 10G via USB-C expansion card | chipset TBD — `lsusb` from the install USB; likely Aquantia `atlantic` (mainline) |
-| Fingerprint | Goodix sensor | `services.fprintd` + PAM hooks for login + sudo (laptop.nix) |
+| Fingerprint | Goodix sensor | `services.fprintd` + PAM hooks for login + sudo (modules/hosts/workstation.nix) |
 | Keyboard | ANSI / US, Graphite | `lansing.desktop.keyboardLayout = "ansi"` (drives XKB + TTY) |
 
 ## Out of scope (for now)
