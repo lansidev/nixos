@@ -1,13 +1,12 @@
 # workstation — Framework 13 Pro laptop (Intel Core Ultra 7 358H).
-{ inputs, ... }:
+{ config, inputs, ... }:
 {
   flake.nixosConfigurations.workstation = inputs.nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
     specialArgs = { inherit inputs; inherit (inputs) self; };
     modules = [
-      inputs.disko.nixosModules.disko
+      config.flake.modules.nixos.base
       ../../disko/workstation.nix
-      inputs.lanzaboote.nixosModules.lanzaboote
       ../../hosts/workstation
       inputs.home-manager.nixosModules.home-manager
       {

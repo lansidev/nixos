@@ -2,13 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../modules/_legacy/system/base.nix
-    ../../modules/_legacy/system/boot.nix
-    ../../modules/_legacy/system/network.nix
-    ../../modules/_legacy/system/users.nix
-    ../../modules/_legacy/system/openssh.nix
-    ../../modules/_legacy/system/sops.nix
-    ../../modules/_legacy/system/tailscale.nix
     ../../modules/_legacy/desktop/niri.nix
     ../../modules/_legacy/desktop/fonts.nix
     ../../modules/_legacy/desktop/audio.nix
