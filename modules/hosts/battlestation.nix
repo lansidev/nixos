@@ -10,7 +10,7 @@
       gaming
       obs-studio
       sunshine
-      user-bread
+      user-lansing
       ../../hosts/battlestation/hardware-configuration.nix
       ../../disko/battlestation.nix
       ({ pkgs, ... }: {
