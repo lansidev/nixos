@@ -3,7 +3,7 @@
 # specific username. A host gets bread by importing nixos.user-bread.
 import ../../lib/mk-user.nix {
   username = "bread";
-  # TODO: add bread's real public SSH key(s). Empty = password-only login, set
-  # at install via `nixos-enter --root /mnt -c 'passwd bread'`.
-  sshKeys = [ ];
+  sshKeys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFSIDoZWfx6cHP0Tp1xwi6cBnYopSd2YHbFugA7t32KN"
+  ];
 }

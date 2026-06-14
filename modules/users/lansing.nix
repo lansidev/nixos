@@ -6,6 +6,6 @@
 import ../../lib/mk-user.nix {
   username = "lansing";
   sshKeys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFSIDoZWfx6cHP0Tp1xwi6cBnYopSd2YHbFugA7t32KN"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMcWWDXjUoynZRzJSaqnkpRN3sbDrTLTVgLVqo9eg2RR"
   ];
 }
