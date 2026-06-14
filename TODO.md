@@ -46,3 +46,14 @@ Steps to make it permanent and clean:
 **User-state, NOT in this repo (lives in `~`, survives rebuilds but is not declarative):** the Lutris game yml + its `prefix_command`; the Wine prefix `/home/lansing/Games/battlenet` incl. `Battle.net.config` (`HardwareAcceleration: "true"`). Battle.net under gamescope can't paste from the niri clipboard — type the password once; AutoLogin remembers it after.
 
 **Optional polish:** a niri window rule to open the gamescope window (`app-id` is `gamescope`) on the `gaming` workspace — mirror the Steam rules in `modules/gaming/steam.nix` (`lansing.desktop.niri.appWindowRules`).
+
+## Errors to investigate
+
+- [ ] **OpenCloud GUI: QtQuick.Controls plugin not found.**
+  ```
+  QList(qrc:/qt/qml/eu/OpenCloud/gui/qml/AccountBar.qml:16:1: module "QtQuick.Controls" plugin "qtquickcontrols2plugin" not found
+      import QtQuick.Controls
+      ^)
+  ```
+- [ ] **Yazi eval warning: `programs.yazi.shellWrapperName` default changed.** The default changed from `"yy"` to `"y"`. Currently using the legacy default (`"yy"`) because `home.stateVersion` is less than `"26.05"`. To silence the warning and keep legacy behavior, set `programs.yazi.shellWrapperName = "yy";`. To adopt the new default, set `programs.yazi.shellWrapperName = "y";`.
+- [ ] **VSCodium: configure git `user.name` and `user.email`.** VSCodium warns: "Make sure you configure your `user.name` and `user.email` in git."
