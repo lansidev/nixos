@@ -22,7 +22,7 @@ change**, and this doc kept paired with
 | models / providers | `home.file.".pi/agent/models.json"` | `~/.pi/agent/models.json` |
 | settings | `home.file.".pi/agent/settings.json"` | `~/.pi/agent/settings.json` |
 | subagent run-mode (async) | `home.file.".pi/agent/extensions/subagent/config.json"` | `~/.pi/agent/extensions/subagent/config.json` |
-| skills pin | `piSkills.rev` / `hash` | `git checkout <rev>` of `simlans/pi-skills` |
+| skills pin | `piSkills.rev` / `hash` | `git checkout <rev>` of `lansidev/pi-skills` |
 | nono profile | `piNonoProfile` (paths differ per platform) | `~/.config/nono/profiles/pi-dev.json` |
 | `spi` wrapper | `writeShellScriptBin "spi"` | `~/.local/bin/spi` |
 | extensions (unpinned) | `piPackages` → `settings.json` + `pi-extensions` service runs `pi update --extensions` | `pi install npm:…` once, then `pi update` to refresh |
@@ -61,7 +61,7 @@ Agent](https://pi.dev) on both NixOS hosts. Pi is a model-agnostic
 terminal agent that lets us swap models per task, gives us the existing
 Claude subscription via `/login`, and adds Cortecs.AI as an OpenAI-
 compatible provider for the work models. Skills come from our own pinned
-`simlans/pi-skills` repo (not a fork of Felix Gladisch's `pi-skills` — that
+`lansidev/pi-skills` repo (not a fork of Felix Gladisch's `pi-skills` — that
 superpowers port is no longer used); extensions are installed by Pi's own
 package manager at runtime. Pi runs sandboxed in `nono.sh` (Landlock LSM on
 Linux) via an `spi` wrapper.
@@ -81,7 +81,7 @@ What's done in this branch (`add-pi`):
       declared
 - [x] `modules/development/pi-coding-agent.nix` —
       `~/.pi/agent/{settings,models}.json`, pinned skills bundle, nono
-      profile, `spi` wrapper. `rev`/`hash` for `simlans/pi-skills` are
+      profile, `spi` wrapper. `rev`/`hash` for `lansidev/pi-skills` are
       filled in.
 - [x] Auto-loaded by import-tree (dendritic layout); the NixOS half lands in
       the `development` bucket on both hosts
@@ -94,7 +94,7 @@ What's still open before merge:
 - [x] ~~Fork `fgladisch/pi-extensions`~~ — **not needed.** Felix's
       extensions install from npm (`@fgladisch/pi-*`); Pi has no
       git-monorepo-subpath support, so the planned `git:.../packages/<name>`
-      installs never worked. Only the `simlans/pi-skills` repo matters (it's
+      installs never worked. Only the `lansidev/pi-skills` repo matters (it's
       pinned by `rev`/`hash`).
 - [ ] Add the **Cortecs API key** to sops. Requires either editing on a
       host that already has age-decrypt access (battlestation) **or**
@@ -127,10 +127,10 @@ They're all declared **unpinned** in the `piPackages` list in
 `pi-extensions` systemd user service — nothing to do here. (`rpiv-i18n` also
 reads `~/.config/rpiv-i18n/locale.json`, rendered by `xdg.configFile`.)
 
-The originally-planned `pi install git:github.com/simlans/pi-extensions/packages/<name>`
+The originally-planned `pi install git:github.com/lansidev/pi-extensions/packages/<name>`
 approach **does not work**: Pi has no git-monorepo-subpath support, so it
 tries to `git clone …/pi-extensions/packages/<name>` and 404s. The
-`simlans/pi-extensions` fork is therefore unnecessary — ignore or delete it.
+`lansidev/pi-extensions` fork is therefore unnecessary — ignore or delete it.
 
 ### 2. Get the Cortecs API key into sops
 
@@ -347,7 +347,7 @@ happens directly on the host that has age access, see step 2.
 | `nono` distribution | `pkgs.nono` from `nixpkgs-unstable` | Stable doesn't ship it. On Linux it sandboxes via Landlock LSM — kernel ≥ 5.13, ours is way above. |
 | Splitting `nono` and `pi-coding-agent` into separate files | Yes | AGENTS.md "one tool per file" rule. |
 | System vs. user scope | System = binary only; user = settings + skills + sandbox profile + `spi` wrapper | Mirrors the `claude-code` split. |
-| Skills | Declarative `fetchFromGitHub simlans/pi-skills`, pinned by rev/hash | Reproducible, follows the `oh-my-tmux` pattern in `modules/shell/tmux/tmux.nix`. |
+| Skills | Declarative `fetchFromGitHub lansidev/pi-skills`, pinned by rev/hash | Reproducible, follows the `oh-my-tmux` pattern in `modules/shell/tmux/tmux.nix`. |
 | Extensions (essentials + Felix's) | Declared **unpinned** in `settings.json`'s `packages` (npm refs incl. `@fgladisch/pi-*`); the `pi-extensions` systemd user service runs `pi update --extensions` on login to fetch them into `~/.pi/agent/npm` | `pi install` can't run on NixOS (it writes the read-only `settings.json` symlink); declaring the list + a oneshot reconciler keeps it hands-off. Unpinned = newest on each login. Felix ships on npm — Pi has no git-monorepo-subpath support, so `git:.../packages/<name>` never worked. |
 | Cortecs API key | sops secret `pi/cortecs_api_key`, read via `apiKey: "!cat /run/secrets/pi/cortecs_api_key"` | No env-var leak; resolves per request. |
 | Claude subscription auth | Built-in Anthropic provider; `pi /login` writes the OAuth token to `~/.pi/agent/auth.json` (per-host, mutable, **not** Nix-managed) | Anthropic is built-in, so it needs **no** `models.json` entry — `models.json` is only for custom providers (Cortecs). Only the token differs per machine, like sessions, so it stays out of the flake. Run `pi /login` once per host. |
@@ -453,8 +453,8 @@ spi -p 'cat /etc/shadow'            # MUST be denied by the nono sandbox
   manager refuses to overwrite real files at `~/.pi/agent/settings.json`
   or `~/.pi/agent/models.json`. `rm -f` them before rebuilding.
 - **`fetchFromGitHub` fixed-output hash mismatch** on
-  `simlans/pi-skills`: the repo was force-pushed or the `rev` is wrong.
-  Re-run `nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main`
+  `lansidev/pi-skills`: the repo was force-pushed or the `rev` is wrong.
+  Re-run `nix run nixpkgs#nix-prefetch-github -- lansidev pi-skills --rev main`
   and paste the new pair into `modules/development/pi-coding-agent.nix`.
 - **`pi` says "no API key"** even though sops shows the secret on disk:
   check that `models.json` lists `cortecs` under `providers` and that
@@ -528,8 +528,8 @@ Upstream repos:
 - [earendil-works/pi](https://github.com/earendil-works/pi) — Pi monorepo (the coding-agent lives under `packages/coding-agent/`)
 - [fgladisch/pi-skills](https://github.com/fgladisch/pi-skills) — Felix's skill library (Superpowers port + custom); **no longer used as our base** — kept here only as a reference/inspiration
 - [fgladisch/pi-extensions](https://github.com/fgladisch/pi-extensions) — Felix's extension monorepo (we use only the `@fgladisch/pi-persistent-history` npm package from it)
-- [simlans/pi-skills](https://github.com/simlans/pi-skills) — our own skills repo (currently just a `commit` skill), pinned by `rev`/`hash` in `modules/development/pi-coding-agent.nix`
-- [simlans/pi-extensions](https://github.com/simlans/pi-extensions) — our fork; **unused**. Pi can't install git-monorepo subpaths, and Felix publishes to npm; install `@fgladisch/pi-*` from npm instead.
+- [lansidev/pi-skills](https://github.com/lansidev/pi-skills) — our own skills repo (currently just a `commit` skill), pinned by `rev`/`hash` in `modules/development/pi-coding-agent.nix`
+- [lansidev/pi-extensions](https://github.com/lansidev/pi-extensions) — our fork; **unused**. Pi can't install git-monorepo subpaths, and Felix publishes to npm; install `@fgladisch/pi-*` from npm instead.
 
 Third-party essentials (recommended in Felix's update):
 

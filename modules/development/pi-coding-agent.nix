@@ -20,7 +20,7 @@ let
   # one `@zosmaai/pi-llm-wiki` (LLM-queryable wiki), and the three
   # `@juicesharp/rpiv-*` ("rpiv") set. NB: all ship on **npm**,
   # NOT installable via the old `git:github.com/.../pi-extensions/packages/<name>`
-  # syntax — Pi has no git-monorepo subpath support (so the `simlans/pi-extensions`
+  # syntax — Pi has no git-monorepo subpath support (so the `lansidev/pi-extensions`
   # fork is not needed). KEEP IN SYNC with the Mac's ~/.pi/agent/settings.json
   # (docs/pi-coding-agent-macos.md) — this list matches the Mac's exactly.
   #
@@ -129,7 +129,7 @@ in
   # stays mutable because home-manager only owns these explicit paths.
   flake.modules.homeManager.development = { pkgs, osConfig, ... }:
     let
-      # simlans/pi-skills is our own skill repo — NOT a fork of fgladisch/pi-skills
+      # lansidev/pi-skills is our own skill repo — NOT a fork of fgladisch/pi-skills
       # (Felix's superpowers port is no longer used; the only Felix dependency left
       # is the `@fgladisch/pi-persistent-history` extension in `piPackages` above).
       # It currently holds a single `commit` skill; add more SKILL.md trees there
@@ -137,9 +137,9 @@ in
       # SKILL.md under the pinned tree becomes invokable as `/skill:<name>`.
       #
       # Roll forward by pushing to the repo, then re-pinning rev + hash via:
-      #   nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main
+      #   nix run nixpkgs#nix-prefetch-github -- lansidev pi-skills --rev main
       piSkills = pkgs.fetchFromGitHub {
-        owner = "simlans";
+        owner = "lansidev";
         repo = "pi-skills";
         rev = "2eeab00942f55a4212241c872986cbe1ba1802db";
         hash = "sha256-7UHDOp+Ssab/sMUt2KeBGa0qdR952876Y0ZoSbFmL7g=";

@@ -1,6 +1,6 @@
 # nixos
 
-Declarative NixOS configuration for two of simlans's machines:
+Declarative NixOS configuration for two of lansidev's machines:
 
 - **`battlestation`** — AMD Ryzen 7 9800X3D desktop, Radeon RX 9070 XT, NVMe + LUKS, Niri/Wayland. Primary user: `bread`.
 - **`workstation`** — Framework 13 Pro laptop (Intel Core Ultra 7 358H / Panther Lake), Intel Arc iGPU, NVMe + LUKS, Niri/Wayland, plus Slack. Primary user: `lansing`.
@@ -61,7 +61,7 @@ lsusb
 sudo NIX_CONFIG="experimental-features = nix-command flakes
 tarball-ttl = 0" nix --refresh run \
   github:nix-community/disko/latest#disko-install -- \
-  --flake github:simlans/nixos#<host> \
+  --flake github:lansidev/nixos#<host> \
   --disk main /dev/nvme0n1 \
   --write-efi-boot-entries
 # → prompts only for the LUKS passphrase. disko-install runs
@@ -78,7 +78,7 @@ tarball-ttl = 0" nix --refresh run \
 # git. The new system stays mounted at /mnt after disko-install exits,
 # which is why this runs before reboot.
 NIX_CONFIG="experimental-features = nix-command flakes" \
-  nix run github:simlans/nixos#init-account
+  nix run github:lansidev/nixos#init-account
 ```
 
 `reboot`, pull the USB, type the LUKS passphrase → `ReGreet` (the GTK
@@ -138,7 +138,7 @@ Boot into Windows via the BIOS boot picker (F11) once. With BitLocker active, ex
 ## Subsequent rebuilds
 
 ```bash
-git clone https://github.com/simlans/nixos ~/nixos
+git clone https://github.com/lansidev/nixos ~/nixos
 sudo nixos-rebuild switch --flake ~/nixos#<host>
 ```
 
@@ -343,7 +343,7 @@ Once the system boots into Niri, finish the per-user bootstrap:
 5. **Pi coding agent (Cortecs + local Ollama)** — the `pi-coding-agent` and
    `nono` binaries are installed system-wide on both hosts; `~/.pi/agent/{settings,
    models}.json`, the `pi-subagents` background-execution config, the pinned
-   `simlans/pi-skills` skills bundle, and the `nono`
+   `lansidev/pi-skills` skills bundle, and the `nono`
    sandbox profile come in via home-manager
    (`modules/development/pi-coding-agent.nix`). See
    [`docs/pi-coding-agent.md`](docs/pi-coding-agent.md) for the full
@@ -352,12 +352,12 @@ Once the system boots into Niri, finish the per-user bootstrap:
    [`docs/pi-coding-agent-macos.md`](docs/pi-coding-agent-macos.md).
    Three one-time steps remain after the first rebuild on a host:
 
-   1. **Pin the skills repo.** The skills live in our own `simlans/pi-skills`
+   1. **Pin the skills repo.** The skills live in our own `lansidev/pi-skills`
       repo (currently just a `commit` skill — not a fork of Felix's
       `pi-skills`). Set its `rev` + `hash` in
       `modules/development/pi-coding-agent.nix`:
       ```bash
-      nix run nixpkgs#nix-prefetch-github -- simlans pi-skills --rev main
+      nix run nixpkgs#nix-prefetch-github -- lansidev pi-skills --rev main
       ```
       Paste the resulting `rev`/`hash` and rebuild. (No `pi-extensions` fork
       is needed — Felix's extensions install from npm; see step 3.)
@@ -515,7 +515,7 @@ If something needs editing before install (e.g. `disko/<host>.nix`):
 
 ```bash
 nix-shell -p git
-git clone https://github.com/simlans/nixos /tmp/cfg
+git clone https://github.com/lansidev/nixos /tmp/cfg
 cd /tmp/cfg
 # … edit …
 sudo NIX_CONFIG="experimental-features = nix-command flakes" nix run \

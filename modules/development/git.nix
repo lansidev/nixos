@@ -1,12 +1,12 @@
 {
   flake.modules.homeManager.development = { pkgs, lib, osConfig, ... }:
     let
-      email = "55317770+simlans@users.noreply.github.com";
+      email = "55317770+lansidev@users.noreply.github.com";
 
       # Public ed25519 SSH key used for signing git commits and tags.
       # Public keys are designed to be shared — verifying signatures is the only
       # operation they enable, and GitHub already publishes this key under
-      # https://api.github.com/users/simlans/ssh_signing_keys. The matching
+      # https://api.github.com/users/lansidev/ssh_signing_keys. The matching
       # private key lives only in 1Password and is exposed at runtime via the
       # GUI's ~/.1password/agent.sock (see modules/apps/onepassword.nix).
       signingPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8KVxjQP4VDhBn3ux8LqstUDjXYHDDVbZgrfVouX4ty";

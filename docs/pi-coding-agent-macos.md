@@ -27,7 +27,7 @@ What lives where:
 | models / providers | `~/.pi/agent/models.json` | `home.file.".pi/agent/models.json"` |
 | local models / Ollama | the Ollama.app + `providers.ollama` in `~/.pi/agent/models.json` | `services.ollama` (`modules/development/ollama.nix`) + `providers.ollama` |
 | settings | `~/.pi/agent/settings.json` | `home.file.".pi/agent/settings.json"` |
-| skills pin | `git checkout <rev>` of `simlans/pi-skills` | `piSkills.rev` / `hash` |
+| skills pin | `git checkout <rev>` of `lansidev/pi-skills` | `piSkills.rev` / `hash` |
 | nono profile | `~/.config/nono/profiles/pi-dev.json` | `piNonoProfile` (paths differ per platform) |
 | `spi` wrapper | `~/.local/bin/spi` | `writeShellScriptBin "spi"` |
 | extensions (unpinned) | `pi install npm:…` once, `pi update` to refresh | `piPackages` → `settings.json` + `pi-extensions` service |
@@ -50,7 +50,7 @@ revision, denied commands, allowed domains, extension list — should match.
 | `~/.pi/agent/settings.json` | home-manager symlink (read-only) | a plain file you write (**mutable**) |
 | `~/.pi/agent/models.json` (Cortecs provider) | home-manager symlink | a plain file you write |
 | Cortecs API key | sops-nix → `/run/secrets/pi/cortecs_api_key`, read via `!cat …` | a local `chmod 600` file (or 1Password), read via `!cat …` |
-| Skills | `fetchFromGitHub simlans/pi-skills`, pinned by `rev`/`hash` | `git clone` of the same repo at the same rev |
+| Skills | `fetchFromGitHub lansidev/pi-skills`, pinned by `rev`/`hash` | `git clone` of the same repo at the same rev |
 | `nono` profile (`pi-dev`) | `xdg.configFile` → `~/.config/nono/profiles/pi-dev.json` | scaffolded with `nono profile init`, written to the same path |
 | `spi` wrapper | `writeShellScriptBin` on `PATH` | a small shell script on your `PATH` |
 | Extensions (`pi install …`) | runtime, not in Nix | **identical** — runtime, same commands |
@@ -71,10 +71,10 @@ Two real differences to keep in mind on macOS:
 ## Prerequisites
 
 - [Homebrew](https://brew.sh) installed.
-- The `simlans/pi-skills` repo exists (you've done this) — our own skills repo
+- The `lansidev/pi-skills` repo exists (you've done this) — our own skills repo
   (just a `commit` skill, not a fork of Felix's `pi-skills`); it's pinned by
   `rev`/`hash` and consumed at build time. The
-  `simlans/pi-extensions` fork turned out **not** to be needed (Felix's
+  `lansidev/pi-extensions` fork turned out **not** to be needed (Felix's
   extensions install from npm, see Step 9), so you can ignore or delete it.
 - Your Cortecs API key from <https://cortecs.ai> (optional — only needed for
   the Cortecs provider; `/login` against your Claude subscription works
@@ -212,12 +212,12 @@ For a *local*, offline provider alongside Cortecs, see
 
 ## 6. Add the skills bundle
 
-The NixOS side pins `simlans/pi-skills` by `rev`/`hash`. Reproduce the exact
+The NixOS side pins `lansidev/pi-skills` by `rev`/`hash`. Reproduce the exact
 same revision so this Mac matches the hosts. Pi discovers any `SKILL.md`
 under `~/.pi/agent/skills/`.
 
 ```bash
-git clone https://github.com/simlans/pi-skills.git ~/Documents/projects/pi-skills
+git clone https://github.com/lansidev/pi-skills.git ~/Documents/projects/pi-skills
 git -C ~/Documents/projects/pi-skills checkout 2eeab00942f55a4212241c872986cbe1ba1802db
 mkdir -p ~/.pi/agent/skills
 ln -sfn ~/Documents/projects/pi-skills/skills ~/.pi/agent/skills/pi-skills
@@ -431,11 +431,11 @@ To refresh them to the newest versions later, run `pi update --extensions`
 (or `pi update`, which also updates Pi itself).
 
 > **Felix's extensions come from npm, not a git monorepo.** The earlier
-> `pi install git:github.com/simlans/pi-extensions/packages/<name>` form does
+> `pi install git:github.com/lansidev/pi-extensions/packages/<name>` form does
 > **not** work — Pi has no git-monorepo-subpath support, so it tries to clone
 > `…/pi-extensions/packages/<name>` as a repo and gets a 404. Felix publishes
 > each extension to npm as `@fgladisch/pi-<name>`, which is what we install
-> above. (So the `simlans/pi-extensions` fork isn't needed for installs — see
+> above. (So the `lansidev/pi-extensions` fork isn't needed for installs — see
 > Prerequisites.)
 
 `pi install` records each package in `~/.pi/agent/settings.json`'s `packages`

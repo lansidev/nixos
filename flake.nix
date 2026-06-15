@@ -1,5 +1,5 @@
 {
-  description = "NixOS configuration for simlans's machines (battlestation desktop, workstation laptop)";
+  description = "NixOS configuration for lansidev's machines (battlestation desktop, workstation laptop)";
 
   inputs = {
     # Hydra-tested stable channel. Bump to the next nixos-YY.MM branch when

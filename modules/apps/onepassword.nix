@@ -36,7 +36,7 @@
   # direnv depend on it everywhere the user exists.
   flake.modules.homeManager.base = { pkgs, ... }:
     let
-      # Prebuilt op-cache release from github.com/simlans/direnv-libs.
+      # Prebuilt op-cache release from github.com/lansidev/direnv-libs.
       # Caches `op read` lookups locally so direnv reloads don't hit the
       # 1Password API on every cd. The system-wide `op` (1Password CLI)
       # comes from the NixOS half above.
@@ -45,7 +45,7 @@
         version = "2.0.0";
 
         src = pkgs.fetchurl {
-          url = "https://github.com/simlans/direnv-libs/releases/download/v${version}/op-cache-x86_64-unknown-linux-gnu.tar.gz";
+          url = "https://github.com/lansidev/direnv-libs/releases/download/v${version}/op-cache-x86_64-unknown-linux-gnu.tar.gz";
           hash = "sha256-zGV1QdTi6w9frne91xiLyZZg8YhqdEFc+y/JlhK1jhQ=";
         };
 
@@ -63,7 +63,7 @@
 
         meta = with pkgs.lib; {
           description = "Caching wrapper around 1Password CLI for direnv";
-          homepage = "https://github.com/simlans/direnv-libs";
+          homepage = "https://github.com/lansidev/direnv-libs";
           platforms = [ "x86_64-linux" ];
         };
       };
