@@ -1,13 +1,20 @@
 {
   flake.modules.homeManager.base = {
     # Blazing-fast TUI file manager (https://github.com/sxyazi/yazi).
-    # `enableZshIntegration` ships the `yy` shell wrapper: it launches yazi,
+    # `enableZshIntegration` ships the `y` shell wrapper: it launches yazi,
     # and on quit cd's the parent shell to the directory yazi left off in
     # (plain `yazi` can't change the shell's cwd; the wrapper reads its
-    # `--cwd-file` and `builtin cd`s there). Note the name is `yy`, not `y`.
+    # `--cwd-file` and `builtin cd`s there).
     programs.yazi = {
       enable = true;
       enableZshIntegration = true;
+      # home-manager's default wrapper name flips from "yy" to "y" only once
+      # `home.stateVersion >= "26.05"`. That's the *install* version (pinned
+      # at "25.11" in home-base.nix), NOT the NixOS release — so the legacy
+      # "yy" default still applies and, left implicit, nags with an eval
+      # warning every rebuild. We set it explicitly to adopt the new "y"
+      # wrapper now and silence the warning.
+      shellWrapperName = "y";
     };
   };
 

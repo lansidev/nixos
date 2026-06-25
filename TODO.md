@@ -62,5 +62,8 @@
       import QtQuick.Controls
       ^)
   ```
-- [ ] **Yazi eval warning: `programs.yazi.shellWrapperName` default changed.** The default changed from `"yy"` to `"y"`. Currently using the legacy default (`"yy"`) because `home.stateVersion` is less than `"26.05"`. To silence the warning and keep legacy behavior, set `programs.yazi.shellWrapperName = "yy";`. To adopt the new default, set `programs.yazi.shellWrapperName = "y";`.
+- [x] **Yazi eval warning: `programs.yazi.shellWrapperName` default changed.**
+  Set `programs.yazi.shellWrapperName = "y";` in `modules/shell/yazi.nix` —
+  adopts the new default wrapper name and silences the per-rebuild eval warning.
+  (The wrapper is now `y`, not `yy`.)
 - [ ] **VSCodium: configure git `user.name` and `user.email`.** VSCodium warns: "Make sure you configure your `user.name` and `user.email` in git."
