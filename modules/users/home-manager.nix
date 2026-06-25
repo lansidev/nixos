@@ -47,6 +47,14 @@ in
     config = {
       home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
+      # When home-manager starts managing a path that already exists as a
+      # plain file (app-generated dotfiles like alacritty.toml, or autostart
+      # entries an app wrote itself), activation aborts with "would be
+      # clobbered" rather than overwrite it. Backing the original up to
+      # <name>.hm-backup lets activation proceed and leaves the prior content
+      # recoverable. One-shot per path: a second unmanaged file at the same
+      # path won't collide because the first switch already took ownership.
+      home-manager.backupFileExtension = "hm-backup";
       home-manager.users = lib.genAttrs config.my.homeUsers (_: { imports = [ hm.base ]; });
     };
   };

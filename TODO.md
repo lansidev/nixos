@@ -51,7 +51,12 @@
 
 ## Errors to investigate
 
-- [ ] **OpenCloud GUI: QtQuick.Controls plugin not found.**
+- [x] **OpenCloud GUI: QtQuick.Controls plugin not found.** OpenCloud's
+  self-registered `~/.config/autostart/OpenCloud.desktop` pointed `Exec` at the
+  unwrapped `bin/.opencloud-wrapped` (no `NIXPKGS_QT6_QML_IMPORT_PATH` /
+  `QT_PLUGIN_PATH`), so the login spawn couldn't load `qtquickcontrols2plugin`.
+  Fixed in `modules/apps/opencloud.nix` by owning the autostart entry via
+  home-manager and pointing it at the wrapper `bin/opencloud`.
   ```
   QList(qrc:/qt/qml/eu/OpenCloud/gui/qml/AccountBar.qml:16:1: module "QtQuick.Controls" plugin "qtquickcontrols2plugin" not found
       import QtQuick.Controls
