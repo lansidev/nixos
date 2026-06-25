@@ -66,4 +66,11 @@
   Set `programs.yazi.shellWrapperName = "y";` in `modules/shell/yazi.nix` —
   adopts the new default wrapper name and silences the per-rebuild eval warning.
   (The wrapper is now `y`, not `yy`.)
-- [ ] **VSCodium: configure git `user.name` and `user.email`.** VSCodium warns: "Make sure you configure your `user.name` and `user.email` in git."
+- [x] **VSCodium: configure git `user.name` and `user.email`.** Identity is
+  deliberately kept out of `/nix/store` (flows from sops via `~/.envrc`), which
+  only reaches shells — so launcher-started VSCodium had no `GIT_AUTHOR_*` and
+  warned. Added the `git-identity-env` home-manager systemd user service in
+  `modules/development/git.nix`: at login it reads the same sops secrets and
+  publishes `GIT_AUTHOR_*`/`GIT_COMMITTER_*`/`GITHUB_USER` into the systemd user
+  + D-Bus activation environment (so launcher/portal/dbus-spawned apps inherit
+  them). Verify after a fresh login that VSCodium no longer nags.

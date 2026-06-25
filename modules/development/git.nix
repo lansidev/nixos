@@ -96,5 +96,48 @@
         $DRY_RUN_CMD rm -f $HOME/.envrc
         $DRY_RUN_CMD install -m644 ${privateEnvrc} $HOME/.envrc
       '';
+
+      # Push the git identity into the session at login. The ~/.envrc export
+      # above only reaches shells (and thus apps launched from a terminal);
+      # GUI apps started from the launcher — VSCodium in particular — have no
+      # GIT_AUTHOR_*/GIT_COMMITTER_* set, so VSCodium's git extension warns
+      # "configure your user.name and user.email". This oneshot reads the same
+      # sops secrets at runtime (so the real email still never lands in
+      # /nix/store) and publishes them into the systemd user manager and the
+      # D-Bus activation environment, which is what launcher/portal/dbus-spawned
+      # apps inherit. Identity flows from one source (sops) to both shells and
+      # the GUI. (Apps niri spawns *directly* at startup still inherit niri's
+      # fixed login env and won't see these — but the launcher path is the one
+      # that was missing.)
+      systemd.user.services.git-identity-env = {
+        Unit = {
+          Description = "Publish git identity from sops into the session/D-Bus environment";
+          Before = [ "graphical-session.target" ];
+          PartOf = [ "graphical-session.target" ];
+        };
+        Service = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "git-identity-env" ''
+            set -eu
+            nf=${osConfig.sops.secrets."git/author_name".path}
+            ef=${osConfig.sops.secrets."git/author_email".path}
+            gf=${osConfig.sops.secrets."git/github_user".path}
+            # Graceful on first boot before sops has populated /run/secrets:
+            # leave the environment untouched rather than fail the unit.
+            [ -r "$nf" ] && [ -r "$ef" ] || exit 0
+            name=$(cat "$nf")
+            email=$(cat "$ef")
+            ghuser=$([ -r "$gf" ] && cat "$gf" || echo "")
+            # --systemd updates both the systemd user manager environment and
+            # the D-Bus activation environment in one call.
+            ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd \
+              "GIT_AUTHOR_NAME=$name" "GIT_AUTHOR_EMAIL=$email" \
+              "GIT_COMMITTER_NAME=$name" "GIT_COMMITTER_EMAIL=$email" \
+              "GITHUB_USER=$ghuser"
+          '';
+        };
+        Install.WantedBy = [ "graphical-session.target" ];
+      };
     };
 }
