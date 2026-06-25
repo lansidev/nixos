@@ -44,7 +44,11 @@
           };
           active_window.max_length = 500;
           media.max_length = 500;
-          workspaces.display = "name";
+          # "id" labels each workspace with its numeric index (1, 2, 3, …).
+          # "name" instead shows the workspace name truncated to
+          # max_label_chars (default 1), which rendered named niri workspaces
+          # as single letters (passwords→p, code→c, …) mixed with bare numbers.
+          workspaces.display = "id";
         };
       };
     };
