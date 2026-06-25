@@ -197,7 +197,7 @@ modules/                                 # every .nix file in here is a flake-pa
   users/bread.nix                        # bread user aspect: example second user, same mkUser builder
   system/                                # → base: locale/nix settings, boot (lanzaboote), disko import, network, users, openssh, sops, tailscale
   desktop/                               # → desktop: niri (NixOS + config.kdl renderer), keyboard-layout options, fonts, audio, power,
-                                         #   tools, keyring, alacritty (HM), noctalia (HM); laptop.nix → own `laptop` bucket (generic laptop
+                                         #   tools, keyring, appimage (binfmt AppImage runtime), alacritty (HM), noctalia (HM); laptop.nix → own `laptop` bucket (generic laptop
                                          #   behaviour; Framework-specific hardware lives in modules/hosts/workstation.nix)
   apps/                                  # → desktop: firefox (+ 1P extension), onepassword (GUI + op-cache/SSH-agent HM half),
                                          #   vesktop, signal, spotify, opencloud; slack + obs-studio have own buckets (host-specific)
