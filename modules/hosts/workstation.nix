@@ -29,6 +29,12 @@
         services.fprintd.enable = true;
         security.pam.services.login.fprintAuth = true;
         security.pam.services.sudo.fprintAuth = true;
+        # Lets 1Password's "Unlock with system authentication" accept the
+        # fingerprint: it delegates unlock to polkit, which authenticates via
+        # the polkit-1 PAM stack. Without this the polkit prompt only takes the
+        # login password. Used to clear the on-demand SSH-agent unlock prompt
+        # that op-ssh-sign triggers when signing a commit (see git.nix).
+        security.pam.services.polkit-1.fprintAuth = true;
 
         # Intel-specific thermal daemon. Harmless if nixos-hardware
         # already sets it, lib.mkDefault keeps overrides cheap.

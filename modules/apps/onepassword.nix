@@ -31,6 +31,26 @@
     ];
   };
 
+  # Autostart 1Password at login so its SSH-agent socket always exists and
+  # commit signing never fails with "Could not connect to socket". `--silent`
+  # launches it minimised to the tray (no window stealing focus); the vault
+  # stays locked and unlocks on demand via system authentication (see the
+  # polkit-1 fprintAuth hookup in modules/hosts/workstation.nix). We own the
+  # autostart entry declaratively rather than letting 1Password's own
+  # "Start at login" toggle write a mutable ~/.config/autostart file.
+  flake.modules.homeManager.desktop = { pkgs, ... }: {
+    xdg.configFile."autostart/1password.desktop".text = ''
+      [Desktop Entry]
+      Name=1Password
+      Exec=${pkgs._1password-gui}/bin/1password --silent
+      Terminal=false
+      Icon=1password
+      Type=Application
+      StartupNotify=false
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
+
   # Home-manager half: op-cache helper + routing SSH through the GUI's
   # agent. In homeManager.base (not desktop) because git signing and
   # direnv depend on it everywhere the user exists.
