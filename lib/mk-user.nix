@@ -37,21 +37,6 @@
       openssh.authorizedKeys.keys = sshKeys;
     };
 
-    # Passwordless `sudo nixos-rebuild`. Keeps password prompts on every other
-    # sudo invocation — only the rebuild path is whitelisted, so a compromised
-    # shell still can't escalate to arbitrary root commands.
-    security.sudo.extraRules = [
-      {
-        users = [ username ];
-        commands = [
-          {
-            command = "/run/current-system/sw/bin/nixos-rebuild";
-            options = [ "NOPASSWD" ];
-          }
-        ];
-      }
-    ];
-
     # NixOS regenerates /etc/passwd from the declarative spec on every rebuild,
     # so a manual `chfn` would get clobbered (`description` is taken from the
     # JSON spec, and `mutableUsers = true` only protects the password field).
