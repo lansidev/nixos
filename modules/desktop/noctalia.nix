@@ -48,6 +48,11 @@
         hooks.started = "noctalia msg wallpaper-random";
         # v5 dropped the global shadow toggle; alpha = 0 keeps shadows off.
         shell.shadow.alpha = 0;
+        # Profile avatar shown in the control center / lockscreen. Converted
+        # from the iPhone HEIC original to a lossless PNG (Noctalia can't read
+        # HEIC). Lives outside the store so it's referenced by absolute path.
+        # Key is shell.avatar_path (the C++ core's schema), NOT general.avatarImage.
+        shell.avatar_path = "${config.home.homeDirectory}/Pictures/avatar/avatar.png";
         # Shell UI font. Captured from the Noctalia UI so both hosts match —
         # otherwise this key lives only in the per-machine
         # ~/.local/state/noctalia/settings.toml override (see header).
