@@ -1,0 +1,22 @@
+# noctalia-greeter configuration — rendered from this template by
+# modules/desktop/greeter.nix (@MARKERS@ filled via builtins.replaceStrings, the
+# same pattern as niri.kdl) into a read-only store file, then symlinked at
+# /var/lib/noctalia-greeter/greeter.toml.
+#
+# greetd starts greeters with an empty environment, so the compositor cannot
+# inherit XKB_DEFAULT_* / XCURSOR_* — anything that must match the desktop
+# session has to be pinned here. Shared verbatim across hosts apart from the
+# keymap.
+
+# Login keymap, filled from host.desktop.keyboardLayout (iso -> de, ansi -> us),
+# matching niri's xkb and the TTY console keymap so the password is typed with
+# the layout the user expects.
+[keyboard]
+layout = "@KEYMAP@"
+
+# Mirrors the desktop pointer from modules/users/home-base.nix. The greeter runs
+# as the `greeter` user with no XCURSOR_PATH, so the theme path is absolute.
+[cursor]
+theme = "@CURSOR_THEME@"
+size = @CURSOR_SIZE@
+path = "@CURSOR_PATH@"

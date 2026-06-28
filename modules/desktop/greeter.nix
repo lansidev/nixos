@@ -14,40 +14,51 @@
 # session: niri is the only one, so the greeter selects it on its own.
 { inputs, ... }:
 {
-  flake.modules.nixos.desktop = { config, pkgs, ... }: {
-    imports = [ inputs.noctalia-greeter.nixosModules.default ];
+  flake.modules.nixos.desktop = { config, pkgs, ... }:
+    let
+      # Built from ./greeter.toml exactly the way niri.kdl is (readFile +
+      # replaceStrings over @MARKERS@): a real, reviewable config file in the
+      # repo turned into a read-only store file. The greeter is a system service
+      # under the `greeter` user, so there is no home-manager xdg.configFile to
+      # symlink it for us — we do the substitution and the symlink (below)
+      # ourselves. The cursor values mirror modules/users/home-base.nix; they are
+      # repeated here because that pointer is defined in home-manager scope, out
+      # of reach of this NixOS module.
+      greeterToml = pkgs.writeText "greeter.toml" (builtins.replaceStrings
+        [ "@KEYMAP@" "@CURSOR_THEME@" "@CURSOR_SIZE@" "@CURSOR_PATH@" ]
+        [
+          (if config.host.desktop.keyboardLayout == "iso" then "de" else "us")
+          "catppuccin-mocha-dark-cursors"
+          "16"
+          "${pkgs.catppuccin-cursors.mochaDark}/share/icons"
+        ]
+        (builtins.readFile ./greeter.toml));
+    in
+    {
+      imports = [ inputs.noctalia-greeter.nixosModules.default ];
 
-    programs.noctalia-greeter = {
-      enable = true;
-      # `package` is intentionally left at the module default: the flake's
-      # nixosModule wires it to its own derivation, built against our stable
-      # `nixpkgs` via the input's `follows` (see flake.nix).
-
-      # greetd starts greeters with an empty environment, so the compositor
-      # cannot inherit XKB_DEFAULT_* or XCURSOR_* — anything that must match the
-      # desktop has to be pinned in greeter.toml here.
+      # `package` stays at the module default: the flake's nixosModule wires it
+      # to its own derivation, built against our stable `nixpkgs` (see flake.nix).
       #
-      # Caveat: the upstream module writes this via systemd-tmpfiles `C`
-      # (copy-once) to /var/lib/noctalia-greeter/greeter.toml so the greeter can
-      # persist its own last-used session/scheme. Editing the settings below
-      # therefore only takes effect on a machine that has no greeter.toml yet —
-      # to re-apply after a change, delete that file and rebuild.
-      settings = {
-        # Login keymap follows the physical layout (host.desktop.keyboardLayout),
-        # the same iso->de / ansi->us mapping niri's xkb and the TTY console use,
-        # so the password is typed with the layout the user expects.
-        keyboard.layout =
-          if config.host.desktop.keyboardLayout == "iso" then "de" else "us";
+      # `settings` is deliberately left empty. Were it set, the upstream module
+      # would copy it *once* (systemd-tmpfiles `C`) into the mutable
+      # /var/lib/noctalia-greeter/greeter.toml — so later edits would never
+      # re-apply and the two hosts could silently drift. Instead we point that
+      # path straight at the read-only store file below: fully declarative,
+      # identical on every machine, and authoritative on every rebuild.
+      programs.noctalia-greeter.enable = true;
 
-        # Match the desktop pointer from modules/users/home-base.nix. The greeter
-        # runs as the `greeter` user with no XCURSOR_PATH, so point it at the
-        # theme's store path explicitly rather than relying on a search path.
-        cursor = {
-          theme = "catppuccin-mocha-dark-cursors";
-          size = 16;
-          path = "${pkgs.catppuccin-cursors.mochaDark}/share/icons";
-        };
+      # The greeter reads (and, on UI session/scheme changes, would write)
+      # /var/lib/noctalia-greeter/greeter.toml. `L+` force-replaces that path on
+      # every activation with a symlink to the store, so the declarative version
+      # always wins and the stale copy left by an earlier `settings = { … }` is
+      # cleaned up automatically — no manual `rm` needed. The trade-off: the
+      # greeter can no longer persist its last-used session/scheme (it would try
+      # to write the read-only store file and just logs a warning), which is fine
+      # here — there is one session (niri) and the cursor/keymap are fixed.
+      # The module's own tmpfiles rule still creates the parent dir.
+      systemd.tmpfiles.settings."20-noctalia-greeter-toml"."/var/lib/noctalia-greeter/greeter.toml"."L+" = {
+        argument = "${greeterToml}";
       };
     };
-  };
 }
