@@ -48,6 +48,10 @@
         hooks.started = "noctalia msg wallpaper-random";
         # v5 dropped the global shadow toggle; alpha = 0 keeps shadows off.
         shell.shadow.alpha = 0;
+        # Shell UI font. Captured from the Noctalia UI so both hosts match —
+        # otherwise this key lives only in the per-machine
+        # ~/.local/state/noctalia/settings.toml override (see header).
+        shell.font_family = "Noto Sans Mono";
 
         bar.main = {
           start = [ "launcher" "clock" "sysmon" "active_window" ];
