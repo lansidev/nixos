@@ -75,6 +75,22 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
+    # Standalone wlroots login greeter for greetd that matches Noctalia's look,
+    # used in place of ReGreet (see modules/desktop/greeter.nix). Unlike ReGreet
+    # — a GTK4 app hosted inside `cage` — this ships its own wlroots compositor
+    # (`noctalia-greeter-compositor`) and binds greetd itself, so it replaces the
+    # cage+regreet path wholesale. It is independent of the noctalia-shell input
+    # above (no Quickshell), so it follows our stable `nixpkgs`, which already
+    # carries the wlroots_0_20 it builds against.
+    #
+    # Pinned to an explicit commit for the same reason as `noctalia`: `rebuild()`
+    # runs `nix flake update` on every switch (see modules/shell/zsh.nix), so a
+    # floating ref would drift each rebuild. Bump deliberately by editing the rev.
+    noctalia-greeter = {
+      url = "github:noctalia-dev/noctalia-greeter/c09a6b5067ab104d6a47fa404ab4ef1f423c3f4c";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Encrypted-at-rest secrets. age-encrypted YAML in `secrets/`, decrypted
     # at activation time into `/run/secrets/...` using the system's SSH host
     # key. sops-nix doesn't maintain release-* branches; master targets

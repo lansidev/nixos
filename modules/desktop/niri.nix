@@ -125,11 +125,12 @@ in
       environment.systemPackages = [ pkgs.xwayland-satellite ];
       # DISPLAY for X11 clients lives in niri's `environment { … }` block in
       # niri.kdl, NOT in environment.sessionVariables. wlroots' backend
-      # autodetection (used by cage, which hosts ReGreet under greetd) treats
-      # DISPLAY in the env as "use the X11 backend" and tries to xcb_connect
-      # to that display at boot — there is no X server, so cage exits with
-      # "Failed to open xcb connection" and the greeter never appears. Scoping
-      # DISPLAY to niri-spawned children keeps greetd/cage clean.
+      # autodetection (used by the noctalia-greeter compositor under greetd)
+      # treats DISPLAY in the env as "use the X11 backend" and tries to
+      # xcb_connect to that display at boot — there is no X server, so the
+      # greeter's compositor exits with "Failed to open xcb connection" and the
+      # greeter never appears. Scoping DISPLAY to niri-spawned children keeps
+      # greetd clean.
       # Tells nixpkgs Electron/Chromium wrappers (spotify, vscode, …) to launch
       # natively on Wayland. Without this they fall back to XWayland and ignore
       # niri's prefer-no-csd, leaving CSD title bars in place.
@@ -178,29 +179,9 @@ in
         variant = "";
       };
 
-      # ReGreet is a GTK4 graphical greeter for greetd. Enabling the NixOS
-      # module flips on `services.greetd` for us and sets
-      # `default_session.command` (via mkDefault) to
-      # `dbus-run-session cage -s -- regreet`. niri's wayland-session
-      # desktop file (installed by `programs.niri`) shows up in the
-      # session dropdown automatically — no hard-coded `--cmd niri-session`
-      # like the old tuigreet config.
-      programs.regreet = {
-        enable = true;
-        # Match the rest of the system (modules/desktop/fonts.nix). Default
-        # is Cantarell 16, tuned for a sans face — drop a couple of points
-        # for the mono.
-        font = {
-          name = "JetBrainsMono Nerd Font";
-          size = 14;
-        };
-        settings = {
-          GTK = {
-            application_prefer_dark_theme = true;
-          };
-        };
-      };
-
+      # The greetd login screen (Noctalia Greeter) is configured in
+      # modules/desktop/greeter.nix; it enables services.greetd and picks up
+      # niri's wayland-session desktop file automatically.
       xdg.portal = {
         enable = true;
         extraPortals = with pkgs; [
