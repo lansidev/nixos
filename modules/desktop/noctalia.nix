@@ -1,4 +1,26 @@
 # Reference: https://docs.noctalia.dev/v5/getting-started/nixos/
+#
+# Config model (matters for keeping this in git): the home-manager module writes
+# `settings` to ~/.config/noctalia/config.toml as a READ-ONLY symlink into the
+# Nix store (xdg.configFile, exactly like niri.kdl). That file is the declarative
+# base and is fully git-synced — editing it here is the source of truth.
+#
+# BUT Noctalia layers a second file on top at runtime:
+# ~/.local/state/noctalia/settings.toml. Its C++ core merges the config-dir
+# *.toml first, then deep-merges that state file OVER it (verified in
+# config_validate.cpp `mergeSources`), so the state file WINS. Every change made
+# in the Noctalia UI (theme, bar, wallpaper selection, dragged lockscreen
+# widgets, …) is persisted there — NOT here, NOT in git. Consequences:
+#   * UI tweaks never flow back to the repo (one-way drift), and
+#   * once a key exists in settings.toml it permanently shadows the value we set
+#     here, even across rebuilds.
+# We deliberately do NOT symlink that state file read-only: it also holds
+# genuinely runtime state (current wallpaper per monitor, widget positions) the
+# UI must be able to write. Discipline instead: manage anything that should be
+# declarative HERE and avoid changing it in the UI. If a setting below stops
+# taking effect, it has been shadowed — delete that key from
+# ~/.local/state/noctalia/settings.toml. (See TODO.md: audit all self-authored
+# modules for this declarative-vs-mutable split.)
 { inputs, ... }:
 {
   flake.modules.homeManager.desktop = { config, ... }: {
@@ -6,7 +28,9 @@
 
     programs.noctalia = {
       enable = true;
-      # Home-Manager still accepts a Nix attrset and serialises it to TOML.
+      # Nix attrset serialised to TOML and linked read-only into the store as
+      # ~/.config/noctalia/config.toml (the declarative base; see the header for
+      # how the runtime settings.toml overlays this).
       settings = {
         theme = {
           mode = "dark";

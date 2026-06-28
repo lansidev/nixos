@@ -1,5 +1,34 @@
 # TODO
 
+## Declarative config hygiene — audit self-authored modules for state drift
+
+Several components we wired up have configs that *look* declarative but are
+mutated at runtime, so UI/runtime changes never flow back to git and can
+silently override what we declare. Two patterns to watch for:
+  * **copy-once** — a module copies our settings into a mutable path once
+    (systemd-tmpfiles `C`), so later edits never re-apply (the noctalia-greeter
+    module default; fixed by symlinking a read-only store file).
+  * **mutable override layer** — the app merges a state file ON TOP of our
+    declarative config at runtime and writes UI changes there, where they win
+    (Noctalia's `~/.local/state/noctalia/settings.toml`).
+
+The standard we want: the declarative file is a read-only Nix-store symlink (the
+niri.kdl / `xdg.configFile` model), authoritative on every rebuild, with no
+hidden copy-once or mutable shadow.
+
+- [x] **greeter** — render `greeter.toml` from a template and symlink it
+  read-only from the store (`modules/desktop/greeter.{nix,toml}`); no more
+  `/var/lib` copy-once.
+- [x] **noctalia** — `config.toml` is already a read-only store symlink;
+  documented the `settings.toml` runtime-override caveat in
+  `modules/desktop/noctalia.nix`.
+- [ ] **Audit every other module we authored** for the same split — confirm the
+  on-disk config is a store symlink and flag anywhere the app writes back
+  (`~/.config`, `~/.local/state`, `~/.cache`) that could shadow it. Sweep at
+  least: niri (`niri.kdl`, read-only ✓), alacritty, tmux, neovim, zsh, yazi,
+  fzf, direnv, git, vscodium, firefox, and the remaining modules under
+  `modules/`.
+
 ## NixOS 26.05 upgrade
 
 `flake.nix` points at `nixos-26.05` / `home-manager release-26.05`. battlestation is switched and live as of 2026-06-11 (generation `26.05.20260608.bd0ff2d (Yarara)`). workstation has not been switched yet. `system.stateVersion` and `home.stateVersion` deliberately stay on `"25.11"` (they pin install-time defaults, not the channel).
